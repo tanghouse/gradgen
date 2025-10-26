@@ -1,0 +1,7 @@
+university,level,portrait,prompt_id,engine,model,output_path
+Aberdeen University,Bachelors,aiony-haust-3TLl_97HNJo-unsplash.jpg,P0_Apple_Studio,genai,gemini-2.5-flash-image,experiments/run_20251020-025631/Aberdeen University__Bachelors/aiony-haust-3TLl_97HNJo-unsplash/P0_Apple_Studio/output.png
+Aberdeen University,Bachelors,aiony-haust-3TLl_97HNJo-unsplash.jpg,P1_Grad_Generic,genai,gemini-2.5-flash-image,experiments/run_20251020-025631/Aberdeen University__Bachelors/aiony-haust-3TLl_97HNJo-unsplash/P1_Grad_Generic/output.png
+Aberdeen University,Bachelors,aiony-haust-3TLl_97HNJo-unsplash.jpg,P2_Grad_Parametric,genai,gemini-2.5-flash-image,experiments/run_20251020-025631/Aberdeen University__Bachelors/aiony-haust-3TLl_97HNJo-unsplash/P2_Grad_Parametric/output.png
+Aberdeen University,Bachelors,albert-dera-ILip77SbmOE-unsplash.jpg,P0_Apple_Studio,genai,gemini-2.5-flash-image,experiments/run_20251020-025631/Aberdeen University__Bachelors/albert-dera-ILip77SbmOE-unsplash/P0_Apple_Studio/output.png
+Aberdeen University,Bachelors,albert-dera-ILip77SbmOE-unsplash.jpg,P1_Grad_Generic,genai,gemini-2.5-flash-image,experiments/run_20251020-025631/Aberdeen University__Bachelors/albert-dera-ILip77SbmOE-unsplash/P1_Grad_Generic/output.png
+Aberdeen University,Bachelors,albert-dera-ILip77SbmOE-unsplash.jpg,P2_Grad_Parametric,genai,gemini-2.5-flash-image,experiments/run_20251020-025631/Aberdeen University__Bachelors/albert-dera-ILip77SbmOE-unsplash/P2_Grad_Parametric/output.png

@@ -1,0 +1,10 @@
+{
+  "university": "Aberdeen University",
+  "level": "Bachelors",
+  "portrait": "vince-fleming-j3lf-Jn6deo-unsplash.jpg",
+  "prompt_id": "P5_Editorial_Soft",
+  "engine": "genai",
+  "model": "gemini-2.5-flash-image",
+  "vertex_project": "YOUR_GCP_PROJECT",
+  "vertex_location": "us-central1"
+}

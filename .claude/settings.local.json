@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(pkill:*)",
+      "Bash(node --version:*)",
+      "Bash(brew install:*)",
+      "Bash(brew services start:*)",
+      "Bash(export PATH=\"/opt/homebrew/opt/postgresql@15/bin:$PATH\")",
+      "Bash(/opt/homebrew/opt/postgresql@15/bin/createdb gradgen)",
+      "Bash(openssl rand:*)",
+      "Bash(poetry install:*)",
+      "Bash(poetry run uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(poetry run celery:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(psql:*)",
+      "Bash(/opt/homebrew/opt/postgresql@15/bin/psql:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

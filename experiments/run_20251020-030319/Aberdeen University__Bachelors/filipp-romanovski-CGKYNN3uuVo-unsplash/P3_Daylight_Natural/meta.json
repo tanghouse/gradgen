@@ -1,0 +1,10 @@
+{
+  "university": "Aberdeen University",
+  "level": "Bachelors",
+  "portrait": "filipp-romanovski-CGKYNN3uuVo-unsplash.jpg",
+  "prompt_id": "P3_Daylight_Natural",
+  "engine": "genai",
+  "model": "gemini-2.5-flash-image",
+  "vertex_project": "YOUR_GCP_PROJECT",
+  "vertex_location": "us-central1"
+}

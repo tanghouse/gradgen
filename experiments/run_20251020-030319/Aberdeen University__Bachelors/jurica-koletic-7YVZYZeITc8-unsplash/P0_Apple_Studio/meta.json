@@ -1,0 +1,10 @@
+{
+  "university": "Aberdeen University",
+  "level": "Bachelors",
+  "portrait": "jurica-koletic-7YVZYZeITc8-unsplash.jpg",
+  "prompt_id": "P0_Apple_Studio",
+  "engine": "genai",
+  "model": "gemini-2.5-flash-image",
+  "vertex_project": "YOUR_GCP_PROJECT",
+  "vertex_location": "us-central1"
+}

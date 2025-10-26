@@ -1,0 +1,3 @@
+Transform the photo into a high-end studio portrait in the style of Apple executive headshots. Half-body composition, professional minimalist attire, natural confident expression. Soft directional key light with subtle catchlights, realistic skin texture. Background: smooth neutral gradient (light gray to off-white) with clean subject separation. Add subtle film grain. Minimalist composition with tasteful negative space. --no text, logos, clutter
+
+Use the provided 'Design Board' image ONLY as a reference for gown/hood/cap style and colors; do not display the board itself. Preserve the person's identity and facial geometry. Photo-real textures and natural skin detail. Return ONE image only (finished portrait). --no text, watermarks, logos.

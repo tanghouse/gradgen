@@ -1,0 +1,10 @@
+{
+  "university": "Aberdeen University",
+  "level": "Bachelors",
+  "portrait": "erik-lucatero-d2MSDujJl2g-unsplash.jpg",
+  "prompt_id": "P2_Grad_Parametric",
+  "engine": "genai",
+  "model": "gemini-2.5-flash-image",
+  "vertex_project": "YOUR_GCP_PROJECT",
+  "vertex_location": "us-central1"
+}
