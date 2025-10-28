@@ -32,7 +32,7 @@ class GenerationService:
 
     def _load_prompts(self) -> dict:
         """Load prompts from prompts.json."""
-        prompts_path = Path(__file__).parent.parent.parent.parent.parent / "prompts.json"
+        prompts_path = Path(__file__).parent.parent.parent / "prompts.json"
         if not prompts_path.exists():
             # Fallback to default prompts
             return {
@@ -128,7 +128,7 @@ class GenerationService:
         Returns:
             Path to board.png or None if not found
         """
-        templates_root = Path(__file__).parent.parent.parent.parent.parent / "templates"
+        templates_root = Path(__file__).parent.parent.parent / "templates"
         board_path = templates_root / university / degree_level / "board.png"
 
         if board_path.exists():
@@ -138,7 +138,7 @@ class GenerationService:
 
     def list_available_universities(self) -> list[dict]:
         """List all available universities and their degree levels."""
-        templates_root = Path(__file__).parent.parent.parent.parent.parent / "templates"
+        templates_root = Path(__file__).parent.parent.parent / "templates"
 
         if not templates_root.exists():
             return []
