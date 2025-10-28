@@ -4,6 +4,7 @@ from app.tasks.celery_app import celery_app
 from app.db.database import SessionLocal
 from app.models import GenerationJob, GeneratedImage, JobStatus
 from app.services.generation_service import generation_service
+from app.services.storage_service import storage_service
 
 
 @celery_app.task(bind=True)
@@ -27,25 +28,37 @@ def process_single_generation(self, job_id: int):
             return {"error": "No image found"}
 
         try:
-            # Generate portrait
-            input_path = Path(image.input_image_path)
+            # Download input image from storage
+            temp_dir = Path("/tmp/generation") / str(job.id)
+            temp_dir.mkdir(parents=True, exist_ok=True)
+
+            input_temp_path = temp_dir / f"input_{image.id}.jpg"
+            storage_service.download_file(image.input_image_path, input_temp_path)
+
+            # Board path is still local (in templates/ directory)
             board_path = Path(image.board_image_path)
 
+            # Generate portrait
             result_bytes = generation_service.generate_portrait(
-                selfie_path=input_path,
+                selfie_path=input_temp_path,
                 board_path=board_path,
                 prompt_id=job.prompt_id or "P2"
             )
 
-            # Save result
-            results_dir = Path("results") / str(job.user_id)
-            results_dir.mkdir(parents=True, exist_ok=True)
+            # Save result to temp file
+            output_temp_path = temp_dir / f"output_{job.id}_{image.id}.png"
+            output_temp_path.write_bytes(result_bytes)
 
-            output_path = results_dir / f"{job.id}_{image.id}.png"
-            output_path.write_bytes(result_bytes)
+            # Upload result to storage
+            output_object_key = f"results/{job.user_id}/{job.id}_{image.id}.png"
+            storage_url = storage_service.upload_file(output_temp_path, output_object_key)
+
+            # Clean up temp files
+            input_temp_path.unlink(missing_ok=True)
+            output_temp_path.unlink(missing_ok=True)
 
             # Update image record
-            image.output_image_path = str(output_path)
+            image.output_image_path = output_object_key
             image.success = True
             image.processed_at = datetime.utcnow()
 
@@ -82,8 +95,8 @@ def process_batch_generation(self, job_id: int):
         # Get all images to process
         images = db.query(GeneratedImage).filter(GeneratedImage.job_id == job_id).all()
 
-        results_dir = Path("results") / str(job.user_id)
-        results_dir.mkdir(parents=True, exist_ok=True)
+        temp_dir = Path("/tmp/generation") / str(job.id)
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
         for idx, image in enumerate(images):
             try:
@@ -93,22 +106,34 @@ def process_batch_generation(self, job_id: int):
                     meta={'current': idx, 'total': len(images)}
                 )
 
-                # Generate portrait
-                input_path = Path(image.input_image_path)
+                # Download input image from storage
+                input_temp_path = temp_dir / f"input_{image.id}.jpg"
+                storage_service.download_file(image.input_image_path, input_temp_path)
+
+                # Board path is still local (in templates/ directory)
                 board_path = Path(image.board_image_path)
 
+                # Generate portrait
                 result_bytes = generation_service.generate_portrait(
-                    selfie_path=input_path,
+                    selfie_path=input_temp_path,
                     board_path=board_path,
                     prompt_id=job.prompt_id or "P2"
                 )
 
-                # Save result
-                output_path = results_dir / f"{job.id}_{image.id}.png"
-                output_path.write_bytes(result_bytes)
+                # Save result to temp file
+                output_temp_path = temp_dir / f"output_{job.id}_{image.id}.png"
+                output_temp_path.write_bytes(result_bytes)
+
+                # Upload result to storage
+                output_object_key = f"results/{job.user_id}/{job.id}_{image.id}.png"
+                storage_url = storage_service.upload_file(output_temp_path, output_object_key)
+
+                # Clean up temp files
+                input_temp_path.unlink(missing_ok=True)
+                output_temp_path.unlink(missing_ok=True)
 
                 # Update image record
-                image.output_image_path = str(output_path)
+                image.output_image_path = output_object_key
                 image.success = True
                 image.processed_at = datetime.utcnow()
 

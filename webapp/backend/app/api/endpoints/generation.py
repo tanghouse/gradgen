@@ -17,6 +17,7 @@ from app.schemas.generation import (
     JobStatusResponse
 )
 from app.services.generation_service import generation_service
+from app.services.storage_service import storage_service
 from app.tasks.generation_tasks import process_single_generation, process_batch_generation
 from app.core.config import settings
 
@@ -59,15 +60,23 @@ async def create_single_generation(
         )
 
     # Save uploaded file
-    upload_dir = Path("uploads") / str(current_user.id)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-
     file_ext = Path(file.filename).suffix
     unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = upload_dir / unique_filename
 
-    with file_path.open("wb") as buffer:
+    # Save to temporary location first
+    temp_dir = Path("/tmp/uploads") / str(current_user.id)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    temp_file_path = temp_dir / unique_filename
+
+    with temp_file_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
+    # Upload to storage (R2 or local)
+    object_key = f"uploads/{current_user.id}/{unique_filename}"
+    storage_url = storage_service.upload_file(temp_file_path, object_key)
+
+    # Clean up temp file
+    temp_file_path.unlink(missing_ok=True)
 
     # Create job
     job = GenerationJob(
@@ -86,7 +95,7 @@ async def create_single_generation(
     generated_image = GeneratedImage(
         job_id=job.id,
         original_filename=file.filename,
-        input_image_path=str(file_path),
+        input_image_path=object_key,  # Store R2 object key, not local path
         board_image_path=str(board_path),
         prompt_text=generation_service.prompts.get(prompt_id, "")
     )
@@ -161,21 +170,29 @@ async def create_batch_generation(
     db.flush()
 
     # Save uploaded files and create image entries
-    upload_dir = Path("uploads") / str(current_user.id)
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = Path("/tmp/uploads") / str(current_user.id)
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     for file in files:
         file_ext = Path(file.filename).suffix
         unique_filename = f"{uuid.uuid4()}{file_ext}"
-        file_path = upload_dir / unique_filename
+        temp_file_path = temp_dir / unique_filename
 
-        with file_path.open("wb") as buffer:
+        # Save to temporary location
+        with temp_file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+
+        # Upload to storage (R2 or local)
+        object_key = f"uploads/{current_user.id}/{unique_filename}"
+        storage_url = storage_service.upload_file(temp_file_path, object_key)
+
+        # Clean up temp file
+        temp_file_path.unlink(missing_ok=True)
 
         generated_image = GeneratedImage(
             job_id=job.id,
             original_filename=file.filename,
-            input_image_path=str(file_path),
+            input_image_path=object_key,  # Store R2 object key, not local path
             board_image_path=str(board_path),
             prompt_text=generation_service.prompts.get(prompt_id, "")
         )
@@ -294,17 +311,29 @@ async def download_result(
             detail="Image not found"
         )
 
-    if not image.output_image_path or not Path(image.output_image_path).exists():
+    if not image.output_image_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Generated image file not found"
+            detail="Generated image not ready"
         )
 
-    return FileResponse(
-        path=image.output_image_path,
-        media_type="image/png",
-        filename=f"gradgen_{image.original_filename}"
-    )
+    # Download from storage to temp file
+    temp_file = Path("/tmp/downloads") / f"result_{image_id}.png"
+    temp_file.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        storage_service.download_file(image.output_image_path, temp_file)
+
+        return FileResponse(
+            path=str(temp_file),
+            media_type="image/png",
+            filename=f"gradgen_{image.original_filename}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to download image: {str(e)}"
+        )
 
 
 @router.get("/inputs/{image_id}")
@@ -325,13 +354,25 @@ async def get_input_image(
             detail="Image not found"
         )
 
-    if not image.input_image_path or not Path(image.input_image_path).exists():
+    if not image.input_image_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Input image file not found"
+            detail="Input image not found"
         )
 
-    return FileResponse(
-        path=image.input_image_path,
-        media_type="image/jpeg"
-    )
+    # Download from storage to temp file
+    temp_file = Path("/tmp/downloads") / f"input_{image_id}.jpg"
+    temp_file.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        storage_service.download_file(image.input_image_path, temp_file)
+
+        return FileResponse(
+            path=str(temp_file),
+            media_type="image/jpeg"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to download image: {str(e)}"
+        )
