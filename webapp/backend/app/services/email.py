@@ -30,8 +30,8 @@ class EmailService:
                                 <!-- Header -->
                                 <tr>
                                     <td style="background-color: #4F46E5; padding: 30px 40px; text-align: center;">
-                                        <h1 style="margin: 0; color: #ffffff; font-size: 28px;">TangHouse</h1>
-                                        <p style="margin: 10px 0 0 0; color: #E0E7FF; font-size: 14px;">Graduation Portrait Generator</p>
+                                        <h1 style="margin: 0; color: #ffffff; font-size: 28px;">GradGen.AI</h1>
+                                        <p style="margin: 10px 0 0 0; color: #E0E7FF; font-size: 14px;">AI-Powered Graduation Portraits</p>
                                     </td>
                                 </tr>
 
@@ -43,7 +43,7 @@ class EmailService:
                                             {f"Hi {full_name}," if full_name else "Hi there,"}
                                         </p>
                                         <p style="margin: 0 0 20px 0; color: #4B5563; font-size: 16px; line-height: 1.5;">
-                                            Thanks for signing up with TangHouse! To complete your registration and start generating beautiful graduation portraits, please verify your email address by clicking the button below.
+                                            Thanks for signing up with GradGen.AI! To complete your registration and start generating beautiful graduation portraits, please verify your email address by clicking the button below.
                                         </p>
 
                                         <!-- CTA Button -->
@@ -65,7 +65,7 @@ class EmailService:
                                         </p>
 
                                         <p style="margin: 30px 0 0 0; color: #6B7280; font-size: 14px; line-height: 1.5;">
-                                            This link will expire in 24 hours. If you didn't create an account with TangHouse, you can safely ignore this email.
+                                            This link will expire in 24 hours. If you didn't create an account with GradGen.AI, you can safely ignore this email.
                                         </p>
                                     </td>
                                 </tr>
@@ -74,10 +74,10 @@ class EmailService:
                                 <tr>
                                     <td style="background-color: #F9FAFB; padding: 30px 40px; text-align: center; border-top: 1px solid #E5E7EB;">
                                         <p style="margin: 0 0 10px 0; color: #6B7280; font-size: 14px;">
-                                            TangHouse - Professional Graduation Portraits
+                                            GradGen.AI - AI-Powered Graduation Portraits
                                         </p>
                                         <p style="margin: 0; color: #9CA3AF; font-size: 12px;">
-                                            © 2025 TangHouse. All rights reserved.
+                                            © 2025 GradGen.AI. All rights reserved.
                                         </p>
                                     </td>
                                 </tr>
@@ -92,7 +92,7 @@ class EmailService:
             params = {
                 "from": settings.RESEND_FROM_EMAIL,
                 "to": [email],
-                "subject": "Verify your TangHouse email address",
+                "subject": "Verify your GradGen.AI email address",
                 "html": html_content,
             }
 
@@ -122,7 +122,7 @@ class EmailService:
                                 <!-- Header -->
                                 <tr>
                                     <td style="background-color: #10B981; padding: 30px 40px; text-align: center;">
-                                        <h1 style="margin: 0; color: #ffffff; font-size: 28px;">Welcome to TangHouse!</h1>
+                                        <h1 style="margin: 0; color: #ffffff; font-size: 28px;">Welcome to GradGen.AI!</h1>
                                         <p style="margin: 10px 0 0 0; color: #D1FAE5; font-size: 14px;">Your email has been verified</p>
                                     </td>
                                 </tr>
@@ -135,7 +135,7 @@ class EmailService:
                                             {f"Hi {full_name}," if full_name else "Hi there,"}
                                         </p>
                                         <p style="margin: 0 0 20px 0; color: #4B5563; font-size: 16px; line-height: 1.5;">
-                                            Your email has been successfully verified! You can now start creating stunning graduation portraits with TangHouse.
+                                            Your email has been successfully verified! You can now start creating stunning graduation portraits with GradGen.AI.
                                         </p>
 
                                         <div style="background-color: #EEF2FF; border-left: 4px solid #4F46E5; padding: 20px; margin: 30px 0; border-radius: 4px;">
@@ -164,10 +164,10 @@ class EmailService:
                                 <tr>
                                     <td style="background-color: #F9FAFB; padding: 30px 40px; text-align: center; border-top: 1px solid #E5E7EB;">
                                         <p style="margin: 0 0 10px 0; color: #6B7280; font-size: 14px;">
-                                            TangHouse - Professional Graduation Portraits
+                                            GradGen.AI - AI-Powered Graduation Portraits
                                         </p>
                                         <p style="margin: 0; color: #9CA3AF; font-size: 12px;">
-                                            © 2025 TangHouse. All rights reserved.
+                                            © 2025 GradGen.AI. All rights reserved.
                                         </p>
                                     </td>
                                 </tr>
@@ -182,7 +182,7 @@ class EmailService:
             params = {
                 "from": settings.RESEND_FROM_EMAIL,
                 "to": [email],
-                "subject": "Welcome to TangHouse - Get started now!",
+                "subject": "Welcome to GradGen.AI - Get started now!",
                 "html": html_content,
             }
 

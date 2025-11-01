@@ -21,7 +21,11 @@
       "WebSearch",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(dig:*)",
+      "Read(//Users/**)",
+      "Bash(poetry add:*)",
+      "Bash(poetry show:*)"
     ],
     "deny": [],
     "ask": []
