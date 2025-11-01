@@ -52,6 +52,7 @@ export default function DashboardPage() {
     const interval = setInterval(async () => {
       const updatedJobs = [...jobs];
       let hasChanges = false;
+      let shouldReloadJobs = false;
 
       for (const jobId of pollingJobIds) {
         try {
@@ -59,20 +60,28 @@ export default function DashboardPage() {
           const jobIndex = updatedJobs.findIndex(j => j.id === jobId);
 
           if (jobIndex !== -1) {
+            const currentJob = updatedJobs[jobIndex];
+
+            // Check if anything changed
+            if (currentJob.status !== status.status ||
+                currentJob.completed_images !== status.completed_images) {
+              hasChanges = true;
+            }
+
             updatedJobs[jobIndex] = {
               ...updatedJobs[jobIndex],
               status: status.status,
               completed_images: status.completed_images,
             };
 
-            // Stop polling if job is complete or failed
+            // Stop polling if job is complete or failed, and reload full job data
             if (status.status === 'completed' || status.status === 'failed') {
               setPollingJobIds(prev => {
                 const next = new Set(prev);
                 next.delete(jobId);
                 return next;
               });
-              hasChanges = true;
+              shouldReloadJobs = true;
             }
           }
         } catch (err) {
@@ -82,6 +91,11 @@ export default function DashboardPage() {
 
       if (hasChanges) {
         setJobs(updatedJobs);
+      }
+
+      // Reload full job data when any job completes to get generated_images
+      if (shouldReloadJobs) {
+        await loadJobs();
       }
     }, 3000); // Poll every 3 seconds
 

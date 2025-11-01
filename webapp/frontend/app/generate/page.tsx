@@ -17,6 +17,7 @@ export default function GeneratePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -48,8 +49,19 @@ export default function GeneratePage() {
       if (fileList.length > 1) {
         setMode('batch');
       }
+
+      // Create preview URLs for images
+      const urls = fileList.map(file => URL.createObjectURL(file));
+      setPreviewUrls(urls);
     }
   };
+
+  // Cleanup preview URLs when component unmounts or files change
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,17 +199,28 @@ export default function GeneratePage() {
                 </div>
                 {files.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
+                    <p className="text-sm font-medium text-gray-700 mb-3">
                       Selected Files ({files.length}):
                     </p>
-                    <ul className="space-y-1">
-                      {files.map((file, idx) => (
-                        <li key={idx} className="text-sm text-gray-600 flex items-center">
-                          <span className="mr-2">📄</span>
-                          {file.name}
-                        </li>
+
+                    {/* Image Previews */}
+                    <div className={`grid gap-4 mb-3 ${files.length === 1 ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'}`}>
+                      {previewUrls.map((url, idx) => (
+                        <div key={idx} className="relative">
+                          <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-white">
+                            <img
+                              src={url}
+                              alt={files[idx].name}
+                              className="w-full h-48 object-cover"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1 truncate" title={files[idx].name}>
+                            {files[idx].name}
+                          </p>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+
                     <p className="text-sm text-gray-500 mt-2">
                       Cost: {files.length} credit{files.length > 1 ? 's' : ''}
                     </p>

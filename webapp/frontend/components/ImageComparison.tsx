@@ -12,8 +12,14 @@ export default function ImageComparison({ imageId }: ImageComparisonProps) {
   const [outputImageUrl, setOutputImageUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
+
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 2000; // 2 seconds
 
   useEffect(() => {
+    let retryTimeout: NodeJS.Timeout;
+
     const loadImages = async () => {
       try {
         setLoading(true);
@@ -31,9 +37,22 @@ export default function ImageComparison({ imageId }: ImageComparisonProps) {
 
         setInputImageUrl(inputUrl);
         setOutputImageUrl(outputUrl);
+        setRetryCount(0); // Reset retry count on success
       } catch (err: any) {
         console.error('Failed to load images:', err);
-        setError('Failed to load images');
+
+        // Check if it's a 404 (images not ready yet) and we haven't exceeded max retries
+        if (err.response?.status === 404 && retryCount < MAX_RETRIES) {
+          setError(`Images not ready yet. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+          // Retry after delay
+          retryTimeout = setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, RETRY_DELAY);
+        } else if (retryCount >= MAX_RETRIES) {
+          setError('Images are still processing. Please refresh the page in a moment.');
+        } else {
+          setError('Failed to load images');
+        }
       } finally {
         setLoading(false);
       }
@@ -41,12 +60,13 @@ export default function ImageComparison({ imageId }: ImageComparisonProps) {
 
     loadImages();
 
-    // Cleanup blob URLs on unmount
+    // Cleanup blob URLs and timeout on unmount
     return () => {
       if (inputImageUrl) URL.revokeObjectURL(inputImageUrl);
       if (outputImageUrl) URL.revokeObjectURL(outputImageUrl);
+      if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [imageId]);
+  }, [imageId, retryCount]);
 
   if (loading) {
     return (
