@@ -42,7 +42,11 @@ export interface User {
   full_name?: string;
   credits: number;
   is_active: boolean;
+  email_verified: boolean;
+  email_verified_at?: string;
+  oauth_provider?: string;
   created_at: string;
+  last_login_at?: string;
 }
 
 export interface University {
@@ -106,6 +110,20 @@ export const authAPI = {
     });
     return response.data;
   },
+
+  verifyEmail: async (token: string) => {
+    const response = await api.post('/auth/verify-email', { token });
+    return response.data;
+  },
+
+  resendVerification: async (email: string) => {
+    const response = await api.post('/auth/resend-verification', { email });
+    return response.data;
+  },
+
+  // OAuth URLs
+  getGoogleAuthUrl: () => `${API_URL}/api/auth/oauth/google/authorize`,
+  getMicrosoftAuthUrl: () => `${API_URL}/api/auth/oauth/microsoft/authorize`,
 };
 
 // User API

@@ -3,6 +3,7 @@ from app.models.credit_transaction import CreditTransaction, TransactionType
 from app.models.generation_job import GenerationJob, JobStatus
 from app.models.generated_image import GeneratedImage
 from app.models.payment import Payment, PaymentStatus
+from app.models.email_verification import EmailVerificationToken
 
 __all__ = [
     "User",
@@ -13,4 +14,5 @@ __all__ = [
     "GeneratedImage",
     "Payment",
     "PaymentStatus",
+    "EmailVerificationToken",
 ]

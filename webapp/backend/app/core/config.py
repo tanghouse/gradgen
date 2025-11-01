@@ -44,6 +44,25 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:3000"
 
+    # Email (Resend)
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "noreply@gradgen.ai"
+
+    # OAuth - Google
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    # OAuth - Microsoft
+    MICROSOFT_CLIENT_ID: str = ""
+    MICROSOFT_CLIENT_SECRET: str = ""
+    MICROSOFT_TENANT_ID: str = "common"
+
+    # Frontend URL (for OAuth redirects and email links)
+    FRONTEND_URL: str = "http://localhost:3000"
+
+    # Email verification token expiry (hours)
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
+
     # Credits & Pricing
     CREDITS_PER_PORTRAIT: int = 1
     CREDITS_PER_DOLLAR: int = 10

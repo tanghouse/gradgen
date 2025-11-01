@@ -25,6 +25,8 @@ celery = "^5.4.0"
 redis = "^5.2.0"
 boto3 = "^1.35.62"
 python-dotenv = "^1.0.1"
+resend = "^2.19.0"
+authlib = "^1.6.5"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.3.3"

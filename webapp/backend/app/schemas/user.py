@@ -28,8 +28,12 @@ class UserInDB(UserBase):
     is_active: bool
     is_superuser: bool
     credits: int
+    email_verified: bool
+    email_verified_at: Optional[datetime]
+    oauth_provider: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
+    last_login_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -37,6 +41,14 @@ class UserInDB(UserBase):
 
 class UserResponse(UserInDB):
     pass
+
+
+class EmailVerificationRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 
 class Token(BaseModel):
