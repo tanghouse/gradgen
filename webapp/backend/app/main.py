@@ -4,10 +4,17 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.endpoints import auth, users, generation, payments, oauth
 from app.db.database import Base, engine
+from app.db.migrations import run_migrations
 import os
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Run migrations for email verification and OAuth
+try:
+    run_migrations()
+except Exception as e:
+    print(f"Migration warning: {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
