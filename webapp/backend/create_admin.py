@@ -6,7 +6,6 @@ import os
 import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,8 +13,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app.models.user import User
 from app.services.referral_service import ReferralService
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Try to use the app's password hashing utilities
+try:
+    from app.core.security import get_password_hash
+    use_app_hash = True
+    print("✅ Using app's password hashing")
+except ImportError:
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    use_app_hash = False
+    print("✅ Using passlib directly")
 
 def create_admin_account(
     email: str = "admin@gradgen.ai",
@@ -56,13 +63,34 @@ def create_admin_account(
             return existing_user
 
         # Create new admin user
-        # Truncate password to 72 bytes for bcrypt
+        # Truncate password to 72 bytes for bcrypt (strict enforcement)
         password_bytes = password.encode('utf-8')
-        if len(password_bytes) > 72:
-            print(f"⚠️  Password truncated to 72 bytes (bcrypt limit)")
-            password = password_bytes[:72].decode('utf-8', errors='ignore')
+        print(f"📏 Password length: {len(password_bytes)} bytes")
 
-        hashed_password = pwd_context.hash(password)
+        if len(password_bytes) > 72:
+            print(f"⚠️  Password exceeds 72 bytes, truncating...")
+            password_bytes = password_bytes[:72]
+            password = password_bytes.decode('utf-8', errors='ignore')
+            print(f"✂️  Truncated to: {len(password_bytes)} bytes")
+
+        # Force password to be within bcrypt limits
+        password = password[:72] if isinstance(password, str) else password_bytes[:72].decode('utf-8', errors='ignore')
+
+        print(f"🔐 Hashing password...")
+        try:
+            if use_app_hash:
+                hashed_password = get_password_hash(password)
+            else:
+                hashed_password = pwd_context.hash(password)
+            print(f"✅ Password hashed successfully")
+        except Exception as e:
+            print(f"❌ Hash error: {e}")
+            print(f"🔄 Trying alternative method...")
+            # Manual bcrypt as last resort
+            import bcrypt
+            password_safe = password.encode('utf-8')[:72]
+            hashed_password = bcrypt.hashpw(password_safe, bcrypt.gensalt()).decode('utf-8')
+            print(f"✅ Password hashed with bcrypt directly")
 
         admin_user = User(
             email=email,
