@@ -14,9 +14,9 @@ class WatermarkService:
 
     # Watermark configuration
     WATERMARK_TEXT = "GradGen.AI"
-    WATERMARK_OPACITY = 0.3  # 30% opacity
-    WATERMARK_FONT_SIZE_RATIO = 0.05  # 5% of image height
-    WATERMARK_PADDING_RATIO = 0.02  # 2% padding from edges
+    WATERMARK_OPACITY = 0.7  # 70% opacity (much more visible)
+    WATERMARK_FONT_SIZE_RATIO = 0.08  # 8% of image height (larger)
+    WATERMARK_PADDING_RATIO = 0.03  # 3% padding from edges
 
     @classmethod
     def add_watermark(
@@ -96,7 +96,20 @@ class WatermarkService:
             opacity_value = opacity if opacity is not None else cls.WATERMARK_OPACITY
             alpha = int(255 * opacity_value)
 
-            # Draw watermark with semi-transparent white
+            # Draw shadow/outline for better visibility
+            # Draw black outline in all 8 directions for strong contrast
+            outline_offset = max(2, font_size // 40)  # Scale outline with font size
+            for offset_x in [-outline_offset, 0, outline_offset]:
+                for offset_y in [-outline_offset, 0, outline_offset]:
+                    if offset_x != 0 or offset_y != 0:  # Skip center
+                        draw.text(
+                            (x + offset_x, y + offset_y),
+                            cls.WATERMARK_TEXT,
+                            fill=(0, 0, 0, alpha),  # Black outline
+                            font=font
+                        )
+
+            # Draw main watermark with semi-transparent white
             draw.text(
                 (x, y),
                 cls.WATERMARK_TEXT,

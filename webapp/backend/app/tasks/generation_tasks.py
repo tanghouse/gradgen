@@ -222,8 +222,8 @@ def process_tier_generation(self, job_id: int):
                 if job.is_watermarked:
                     result_bytes = WatermarkService.add_watermark(
                         result_bytes,
-                        position="bottom_right",
-                        opacity=0.3
+                        position="bottom_right"
+                        # Uses default opacity (0.7) for better visibility
                     )
 
                 # Save result to temp file
