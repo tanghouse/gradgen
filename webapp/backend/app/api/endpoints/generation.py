@@ -476,11 +476,11 @@ async def generate_with_tier(
     db.commit()
     db.refresh(job)
 
-    # Queue background task (will be created next)
-    # from app.tasks.generation_tasks import process_tier_generation
-    # task = process_tier_generation.delay(job.id)
-    # job.celery_task_id = task.id
-    # db.commit()
+    # Queue background task
+    from app.tasks.generation_tasks import process_tier_generation
+    task = process_tier_generation.delay(job.id)
+    job.celery_task_id = task.id
+    db.commit()
 
     return job
 

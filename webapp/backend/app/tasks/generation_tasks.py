@@ -5,6 +5,7 @@ from app.db.database import SessionLocal
 from app.models import GenerationJob, GeneratedImage, JobStatus
 from app.services.generation_service import generation_service
 from app.services.storage_service import storage_service
+from app.services.watermark_service import WatermarkService
 
 
 @celery_app.task(bind=True)
@@ -145,6 +146,113 @@ def process_batch_generation(self, job_id: int):
                 job.failed_images += 1
 
             db.commit()
+
+        # Update job status
+        if job.completed_images == job.total_images:
+            job.status = JobStatus.COMPLETED
+        elif job.completed_images > 0:
+            job.status = JobStatus.COMPLETED  # Partial success
+            job.error_message = f"{job.failed_images} images failed"
+        else:
+            job.status = JobStatus.FAILED
+            job.error_message = "All images failed to generate"
+
+        job.completed_at = datetime.utcnow()
+        db.commit()
+
+        return {"status": "completed", "job_id": job_id}
+
+    finally:
+        db.close()
+
+
+@celery_app.task(bind=True)
+def process_tier_generation(self, job_id: int):
+    """
+    Process tier-based generation (free or premium).
+    Generates 5 photos with different prompts.
+    Applies watermarks for free tier.
+    """
+    db = SessionLocal()
+    try:
+        job = db.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+        if not job:
+            return {"error": "Job not found"}
+
+        job.status = JobStatus.PROCESSING
+        db.commit()
+
+        # Get all images to process (one per prompt)
+        images = db.query(GeneratedImage).filter(GeneratedImage.job_id == job_id).all()
+
+        temp_dir = Path("/tmp/generation") / str(job.id)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Download input image once (same for all prompts)
+        if not images:
+            job.status = JobStatus.FAILED
+            job.error_message = "No images found for job"
+            db.commit()
+            return {"error": "No images found"}
+
+        first_image = images[0]
+        input_temp_path = temp_dir / f"input_{first_image.id}.jpg"
+        storage_service.download_file(first_image.input_image_path, input_temp_path)
+
+        # Board path is local
+        board_path = Path(first_image.board_image_path)
+
+        # Process each prompt
+        for idx, image in enumerate(images):
+            try:
+                # Update progress
+                self.update_state(
+                    state='PROGRESS',
+                    meta={'current': idx, 'total': len(images)}
+                )
+
+                # Generate portrait using custom prompt
+                result_bytes = generation_service.generate_portrait(
+                    selfie_path=input_temp_path,
+                    board_path=board_path,
+                    custom_prompt=image.prompt_text
+                )
+
+                # Apply watermark if free tier
+                if job.is_watermarked:
+                    result_bytes = WatermarkService.add_watermark(
+                        result_bytes,
+                        position="bottom_right",
+                        opacity=0.3
+                    )
+
+                # Save result to temp file
+                output_temp_path = temp_dir / f"output_{job.id}_{image.id}.png"
+                output_temp_path.write_bytes(result_bytes)
+
+                # Upload result to storage
+                output_object_key = f"results/{job.user_id}/{job.id}_{image.id}.png"
+                storage_url = storage_service.upload_file(output_temp_path, output_object_key)
+
+                # Clean up output temp file
+                output_temp_path.unlink(missing_ok=True)
+
+                # Update image record
+                image.output_image_path = output_object_key
+                image.success = True
+                image.processed_at = datetime.utcnow()
+
+                job.completed_images += 1
+
+            except Exception as e:
+                image.success = False
+                image.error_message = str(e)
+                job.failed_images += 1
+
+            db.commit()
+
+        # Clean up input file
+        input_temp_path.unlink(missing_ok=True)
 
         # Update job status
         if job.completed_images == job.total_images:
