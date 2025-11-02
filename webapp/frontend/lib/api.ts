@@ -47,6 +47,11 @@ export interface User {
   oauth_provider?: string;
   created_at: string;
   last_login_at?: string;
+  // New business model fields
+  has_used_free_tier?: boolean;
+  has_purchased_premium?: boolean;
+  referral_discount_eligible?: boolean;
+  referral_code?: string;
 }
 
 export interface University {
@@ -87,6 +92,53 @@ export interface JobStatus {
   completed_images: number;
   total_images: number;
   message?: string;
+}
+
+export interface TierStatus {
+  tier: 'free' | 'premium';
+  has_used_free_tier: boolean;
+  has_purchased_premium: boolean;
+  can_generate: boolean;
+  message: string;
+}
+
+export interface PricingInfo {
+  base_price: number;
+  discounted_price: number | null;
+  discount_available: boolean;
+  discount_source: string | null;
+  referral_discount_eligible: boolean;
+  referrals_completed: number;
+  referrals_needed: number;
+}
+
+export interface CheckoutSession {
+  session_id: string;
+  session_url: string;
+  amount: number;
+  original_price: number;
+  discount_applied: number;
+  discount_source: string | null;
+}
+
+export interface ReferralStats {
+  referral_code: string;
+  referral_link: string;
+  stats: {
+    total_referrals: number;
+    completed_referrals: number;
+    pending_referrals: number;
+    discount_eligible: boolean;
+    referrals_needed: number;
+    referrals_remaining: number;
+  };
+}
+
+export interface PromoCodeValidation {
+  valid: boolean;
+  discount_amount?: number;
+  discount_type?: string;
+  message: string;
 }
 
 // Auth API
@@ -146,6 +198,29 @@ export const generationAPI = {
     return response.data.universities;
   },
 
+  // New tier-based generation
+  getTierStatus: async (): Promise<TierStatus> => {
+    const response = await api.get('/generation/tier-status');
+    return response.data;
+  },
+
+  generateTier: async (
+    file: File,
+    university: string,
+    degreeLevel: string
+  ): Promise<GenerationJob> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('university', university);
+    formData.append('degree_level', degreeLevel);
+
+    const response = await api.post('/generation/generate-tier', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  // Legacy endpoints (kept for backward compatibility)
   generateSingle: async (
     file: File,
     university: string,
@@ -221,8 +296,49 @@ export const paymentAPI = {
     return response.data;
   },
 
+  // New tier-based payment endpoints
+  getPricingInfo: async (): Promise<PricingInfo> => {
+    const response = await api.get('/payments/pricing-info');
+    return response.data;
+  },
+
+  validatePromoCode: async (promoCode: string): Promise<PromoCodeValidation> => {
+    const response = await api.post('/payments/validate-promo-code', {
+      promo_code: promoCode,
+    });
+    return response.data;
+  },
+
+  createPremiumCheckout: async (promoCode?: string): Promise<CheckoutSession> => {
+    const response = await api.post('/payments/create-premium-checkout', {
+      promo_code: promoCode || null,
+    });
+    return response.data;
+  },
+
+  // Legacy endpoint
   createPaymentIntent: async (credits: number) => {
     const response = await api.post('/payments/create-payment-intent', { credits });
+    return response.data;
+  },
+};
+
+// Referral API
+export const referralAPI = {
+  getStats: async (): Promise<ReferralStats> => {
+    const response = await api.get('/referrals/stats');
+    return response.data;
+  },
+
+  getLink: async (): Promise<ReferralStats> => {
+    const response = await api.get('/referrals/link');
+    return response.data;
+  },
+
+  trackReferral: async (referralCode: string) => {
+    const response = await api.post('/referrals/track', {
+      referral_code: referralCode,
+    });
     return response.data;
   },
 };
