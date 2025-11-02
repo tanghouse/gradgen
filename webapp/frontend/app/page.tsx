@@ -10,25 +10,25 @@ const EXAMPLES = [
   {
     id: 1,
     before: '/examples/before/example-1.jpg',
-    after: '/examples/after/example-1.jpg',
+    after: '/examples/after/example-1.png',
     name: 'Professional Studio Style',
   },
   {
     id: 2,
     before: '/examples/before/example-2.jpg',
-    after: '/examples/after/example-2.jpg',
+    after: '/examples/after/example-2.png',
     name: 'University Regalia',
   },
   {
     id: 3,
     before: '/examples/before/example-3.jpg',
-    after: '/examples/after/example-3.jpg',
+    after: '/examples/after/example-3.png',
     name: 'Classic Graduation',
   },
   {
     id: 4,
     before: '/examples/before/example-4.jpg',
-    after: '/examples/after/example-4.jpg',
+    after: '/examples/after/example-4.png',
     name: 'Editorial Style',
   },
 ];
