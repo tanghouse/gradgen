@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { generationAPI, GenerationJob, JobStatus } from '@/lib/api';
+import { generationAPI, GenerationJob, JobStatus, TierStatus } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import ImageComparison from '@/components/ImageComparison';
 
@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [jobs, setJobs] = useState<GenerationJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [pollingJobIds, setPollingJobIds] = useState<Set<number>>(new Set());
+  const [tierStatus, setTierStatus] = useState<TierStatus | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  // Load jobs
+  // Load jobs and tier status
   const loadJobs = async () => {
     try {
       const data = await generationAPI.listJobs();
@@ -39,9 +40,19 @@ export default function DashboardPage() {
     }
   };
 
+  const loadTierStatus = async () => {
+    try {
+      const status = await generationAPI.getTierStatus();
+      setTierStatus(status);
+    } catch (err) {
+      console.error('Failed to load tier status:', err);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadJobs();
+      loadTierStatus();
     }
   }, [user]);
 
@@ -149,18 +160,63 @@ export default function DashboardPage() {
             <p className="text-gray-600">View your generation jobs and download results</p>
           </div>
 
-          {/* User Stats */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="text-sm text-gray-600 mb-1">Available Credits</div>
-              <div className="text-3xl font-bold text-primary-600">{user.credits}</div>
-              <button
-                onClick={() => router.push('/credits')}
-                className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-semibold"
-              >
-                Buy More →
-              </button>
+          {/* Tier Status Banner */}
+          {tierStatus && (
+            <div className={`mb-8 rounded-lg shadow-lg overflow-hidden ${
+              tierStatus.tier === 'premium'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                : tierStatus.has_used_free_tier
+                  ? 'bg-gradient-to-r from-gray-600 to-gray-700'
+                  : 'bg-gradient-to-r from-blue-600 to-cyan-600'
+            }`}>
+              <div className="p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className="text-3xl">
+                        {tierStatus.tier === 'premium' ? '👑' : tierStatus.has_used_free_tier ? '🔒' : '🎁'}
+                      </span>
+                      <h2 className="text-2xl font-bold">
+                        {tierStatus.tier === 'premium'
+                          ? 'Premium Account'
+                          : tierStatus.has_used_free_tier
+                            ? 'Free Tier Used'
+                            : 'Free Tier Available'}
+                      </h2>
+                    </div>
+                    <p className="text-white/90">
+                      {tierStatus.tier === 'premium'
+                        ? 'Unlimited generations • No watermarks • Full access'
+                        : tierStatus.has_used_free_tier
+                          ? 'Upgrade to Premium to generate more professional photos'
+                          : '5 free watermarked photos available • Try it now!'}
+                    </p>
+                  </div>
+
+                  {tierStatus.tier !== 'premium' && (
+                    <button
+                      onClick={() => router.push('/generate')}
+                      className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+                    >
+                      {tierStatus.has_used_free_tier ? 'Upgrade to Premium' : 'Try Free Tier'}
+                    </button>
+                  )}
+
+                  {tierStatus.tier === 'premium' && (
+                    <button
+                      onClick={() => router.push('/generate')}
+                      className="bg-white/20 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors"
+                    >
+                      Generate Photos
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* Stats Cards */}
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="text-sm text-gray-600 mb-1">Total Jobs</div>
               <div className="text-3xl font-bold text-gray-900">{jobs.length}</div>
