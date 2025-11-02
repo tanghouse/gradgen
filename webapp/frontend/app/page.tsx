@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import BeforeAfterSlider from '@/components/BeforeAfterSlider';
+import SideBySideComparison from '@/components/SideBySideComparison';
 
 // Example photos configuration
 const EXAMPLES = [
@@ -60,14 +60,15 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Before/After Slider */}
+            {/* Side by Side Comparison */}
             {mounted && EXAMPLES[currentExample] && (
               <div className="mb-8">
-                <BeforeAfterSlider
+                <SideBySideComparison
                   beforeImage={EXAMPLES[currentExample].before}
                   afterImage={EXAMPLES[currentExample].after}
                   beforeLabel="Original"
                   afterLabel="GradGen.AI"
+                  title={EXAMPLES[currentExample].name}
                 />
               </div>
             )}
