@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 
 interface BeforeAfterSliderProps {
   beforeImage: string;
@@ -18,6 +17,7 @@ export default function BeforeAfterSlider({
 }: BeforeAfterSliderProps) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMove = (clientX: number) => {
@@ -49,23 +49,46 @@ export default function BeforeAfterSlider({
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
+  useEffect(() => {
+    // Preload images
+    const img1 = new window.Image();
+    const img2 = new window.Image();
+    let loaded = 0;
+
+    const onLoad = () => {
+      loaded++;
+      if (loaded === 2) {
+        setImagesLoaded(true);
+      }
+    };
+
+    img1.onload = onLoad;
+    img2.onload = onLoad;
+    img1.src = beforeImage;
+    img2.src = afterImage;
+  }, [beforeImage, afterImage]);
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full max-w-4xl mx-auto aspect-[4/3] overflow-hidden rounded-2xl shadow-2xl cursor-ew-resize select-none"
+      className="relative w-full max-w-4xl mx-auto aspect-[4/3] overflow-hidden rounded-2xl shadow-2xl cursor-ew-resize select-none bg-gray-200"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleMouseUp}
     >
+      {!imagesLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      )}
+
       {/* After Image (Full width) */}
       <div className="absolute inset-0">
-        <Image
+        <img
           src={afterImage}
           alt={afterLabel}
-          fill
-          className="object-cover"
-          priority
+          className="w-full h-full object-cover"
         />
         {/* After Label */}
         <div className="absolute top-4 right-4 bg-primary-600 text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg">
@@ -78,12 +101,10 @@ export default function BeforeAfterSlider({
         className="absolute inset-0"
         style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
       >
-        <Image
+        <img
           src={beforeImage}
           alt={beforeLabel}
-          fill
-          className="object-cover"
-          priority
+          className="w-full h-full object-cover"
         />
         {/* Before Label */}
         <div className="absolute top-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-full font-semibold text-sm shadow-lg">
