@@ -13,10 +13,10 @@ class WatermarkService:
     """Service for adding watermarks to generated images"""
 
     # Watermark configuration
-    WATERMARK_TEXT = "GradGen.AI"
-    WATERMARK_OPACITY = 0.5  # 50% opacity for diagonal pattern
-    WATERMARK_FONT_SIZE_RATIO = 0.12  # 12% of image height (very large)
-    WATERMARK_SPACING_RATIO = 1.5  # Spacing between diagonal repeats
+    WATERMARK_TEXT = "GRADGEN.AI"
+    WATERMARK_OPACITY = 0.35  # 35% opacity - visible but not overwhelming
+    WATERMARK_FONT_SIZE_RATIO = 0.15  # 15% of image height (large but elegant)
+    WATERMARK_SPACING_RATIO = 2.2  # More spacing for cleaner look
 
     @classmethod
     def add_watermark(
@@ -47,17 +47,34 @@ class WatermarkService:
             # Calculate font size based on image dimensions
             font_size = int(image.height * cls.WATERMARK_FONT_SIZE_RATIO)
 
-            # Try to load a good font, fall back to default if not available
-            try:
-                # Try common system fonts
-                font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", font_size)
-            except:
+            # Try to load elegant fonts in order of preference
+            font_paths = [
+                # macOS elegant fonts
+                "/System/Library/Fonts/Supplemental/Futura.ttc",
+                "/System/Library/Fonts/Supplemental/Avenir Next.ttc",
+                "/System/Library/Fonts/HelveticaNeue.ttc",
+                "/System/Library/Fonts/SFNSText.ttf",
+                # Linux elegant fonts
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                # Railway/common locations
+                "/usr/share/fonts/google-noto/NotoSans-Bold.ttf",
+                "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
+            ]
+
+            font = None
+            for font_path in font_paths:
                 try:
-                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
+                    font = ImageFont.truetype(font_path, font_size)
+                    logger.info(f"Using watermark font: {font_path}")
+                    break
                 except:
-                    # Fallback to default PIL font
-                    font = ImageFont.load_default()
-                    logger.warning("Using default font for watermark")
+                    continue
+
+            if font is None:
+                # Last resort fallback
+                font = ImageFont.load_default()
+                logger.warning("Using default font for watermark")
 
             # Get text bounding box (using a temporary draw object)
             temp_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
@@ -80,24 +97,22 @@ class WatermarkService:
             rotated_layer = Image.new("RGBA", (diagonal_size, diagonal_size), (0, 0, 0, 0))
             rotated_draw = ImageDraw.Draw(rotated_layer)
 
-            # Draw outline for better visibility
-            outline_offset = max(3, font_size // 30)
+            # Subtle shadow for depth (softer than harsh outline)
+            shadow_offset = max(2, font_size // 40)
+            shadow_alpha = int(alpha * 0.6)  # Shadow is slightly more transparent
 
             # Fill the rotated canvas with repeating watermarks
             for y_pos in range(-diagonal_size // 2, diagonal_size * 2, spacing_y):
                 for x_pos in range(-diagonal_size // 2, diagonal_size * 2, spacing_x):
-                    # Draw black outline
-                    for offset_x in [-outline_offset, 0, outline_offset]:
-                        for offset_y in [-outline_offset, 0, outline_offset]:
-                            if offset_x != 0 or offset_y != 0:
-                                rotated_draw.text(
-                                    (x_pos + offset_x, y_pos + offset_y),
-                                    cls.WATERMARK_TEXT,
-                                    fill=(0, 0, 0, alpha),
-                                    font=font
-                                )
+                    # Draw subtle shadow (bottom-right offset for depth)
+                    rotated_draw.text(
+                        (x_pos + shadow_offset, y_pos + shadow_offset),
+                        cls.WATERMARK_TEXT,
+                        fill=(0, 0, 0, shadow_alpha),
+                        font=font
+                    )
 
-                    # Draw main white text
+                    # Draw main white text with slight transparency
                     rotated_draw.text(
                         (x_pos, y_pos),
                         cls.WATERMARK_TEXT,
