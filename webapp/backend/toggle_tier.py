@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.models.user import User
+from app.models import User
 
 
 def toggle_tier(email: str, target_tier: str = None):

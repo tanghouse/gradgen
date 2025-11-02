@@ -11,9 +11,7 @@ from sqlalchemy.orm import Session
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.models.user import User
-from app.models.generation import GenerationJob, GeneratedImage
-from app.models.payment import Payment
+from app.models import User, GenerationJob, GeneratedImage, Payment
 from app.services.storage_service import storage_service
 
 
