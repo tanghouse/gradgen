@@ -376,3 +376,144 @@ async def get_input_image(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to download image: {str(e)}"
         )
+
+
+@router.post("/generate-tier", response_model=GenerationJobResponse)
+async def generate_with_tier(
+    file: UploadFile = File(...),
+    university: str = Form(...),
+    degree_level: str = Form(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate graduation photos based on user's tier (free or premium).
+
+    Free tier:
+    - 5 prompts, 5 watermarked photos
+    - Can only be used once per user
+    - Sets has_used_free_tier = True
+
+    Premium tier:
+    - 5 random prompts, 5 unwatermarked photos
+    - Requires has_purchased_premium = True
+    - Can be used after purchasing
+
+    Returns job ID to poll for status.
+    """
+    # Determine tier
+    tier = None
+    if not current_user.has_used_free_tier:
+        tier = "free"
+    elif current_user.has_purchased_premium:
+        tier = "premium"
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Free tier already used. Please purchase premium tier to continue."
+        )
+
+    # Check if board exists
+    board_path = generation_service.get_board_path(university, degree_level)
+    if not board_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Design board not found for {university} - {degree_level}"
+        )
+
+    # Save uploaded file
+    file_ext = Path(file.filename).suffix
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+
+    temp_dir = Path("/tmp/uploads") / str(current_user.id)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    temp_file_path = temp_dir / unique_filename
+
+    with temp_file_path.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Upload to storage
+    object_key = f"uploads/{current_user.id}/{unique_filename}"
+    storage_url = storage_service.upload_file(temp_file_path, object_key)
+
+    # Clean up temp file
+    temp_file_path.unlink(missing_ok=True)
+
+    # Get prompts for tier
+    prompts = generation_service.get_prompts_for_tier(tier, university, degree_level)
+    num_prompts = len(prompts)
+
+    # Create job
+    job = GenerationJob(
+        user_id=current_user.id,
+        job_type=f"{tier}_tier",
+        university=university,
+        degree_level=degree_level,
+        tier=tier,
+        is_watermarked=(tier == "free"),
+        total_images=num_prompts,
+        status=JobStatus.PENDING,
+        prompts_used=",".join(prompts.keys())  # Store comma-separated prompt IDs
+    )
+    db.add(job)
+    db.flush()
+
+    # Create image entries for each prompt
+    for prompt_id, prompt_data in prompts.items():
+        generated_image = GeneratedImage(
+            job_id=job.id,
+            original_filename=file.filename,
+            input_image_path=object_key,
+            board_image_path=str(board_path),
+            prompt_text=prompt_data["prompt"]
+        )
+        db.add(generated_image)
+
+    # Mark tier as used (before committing, in case of failure)
+    if tier == "free":
+        current_user.has_used_free_tier = True
+
+    db.commit()
+    db.refresh(job)
+
+    # Queue background task (will be created next)
+    # from app.tasks.generation_tasks import process_tier_generation
+    # task = process_tier_generation.delay(job.id)
+    # job.celery_task_id = task.id
+    # db.commit()
+
+    return job
+
+
+@router.get("/tier-status")
+async def get_tier_status(
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get user's current tier status
+
+    Returns:
+    - tier: "free", "premium", or "needs_payment"
+    - has_used_free_tier: Boolean
+    - has_purchased_premium: Boolean
+    - can_generate: Boolean
+    """
+    if not current_user.has_used_free_tier:
+        tier = "free"
+        can_generate = True
+    elif current_user.has_purchased_premium:
+        tier = "premium"
+        can_generate = True
+    else:
+        tier = "needs_payment"
+        can_generate = False
+
+    return {
+        "tier": tier,
+        "has_used_free_tier": current_user.has_used_free_tier,
+        "has_purchased_premium": current_user.has_purchased_premium,
+        "can_generate": can_generate,
+        "message": "Free tier available" if tier == "free" else
+                   "Premium tier active" if tier == "premium" else
+                   "Please purchase premium tier to continue"
+    }

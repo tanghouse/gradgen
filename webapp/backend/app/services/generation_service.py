@@ -1,9 +1,16 @@
 import os
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List
 from PIL import Image
 from app.core.config import settings
+from app.core.prompts import (
+    get_free_tier_prompts,
+    get_random_premium_prompts,
+    get_prompt_by_id,
+    format_prompt
+)
+from app.services.watermark_service import add_watermark_to_image
 
 try:
     from google import genai
@@ -71,7 +78,8 @@ class GenerationService:
         self,
         selfie_path: Path,
         board_path: Path,
-        prompt_id: str = "P2"
+        prompt_id: str = "P2",
+        custom_prompt: str = None
     ) -> bytes:
         """
         Generate a graduation portrait using Gemini.
@@ -80,14 +88,17 @@ class GenerationService:
             selfie_path: Path to the input portrait photo
             board_path: Path to the design board (gown reference)
             prompt_id: Prompt ID to use (default P2)
+            custom_prompt: Override prompt text (optional)
 
         Returns:
             bytes: Generated image data
         """
-        if prompt_id not in self.prompts:
+        if custom_prompt:
+            prompt = custom_prompt
+        elif prompt_id not in self.prompts:
             raise ValueError(f"Unknown prompt ID: {prompt_id}")
-
-        prompt = self.prompts[prompt_id]
+        else:
+            prompt = self.prompts[prompt_id]
 
         # Create parts for Gemini
         def part(p: Path):
@@ -160,6 +171,108 @@ class GenerationService:
                 })
 
         return universities
+
+    def get_prompts_for_tier(self, tier: str, university: str = "", degree_level: str = "") -> Dict:
+        """
+        Get prompts based on tier (free or premium)
+
+        Args:
+            tier: "free" or "premium"
+            university: University name for parametric prompts
+            degree_level: Degree level for parametric prompts
+
+        Returns:
+            Dictionary of prompts {prompt_id: prompt_data}
+        """
+        if tier == "free":
+            prompts = get_free_tier_prompts()
+        elif tier == "premium":
+            prompts = get_random_premium_prompts(count=5)
+        else:
+            raise ValueError(f"Invalid tier: {tier}")
+
+        # Format prompts with university details if needed
+        formatted_prompts = {}
+        for prompt_id, prompt_data in prompts.items():
+            prompt_text = prompt_data["prompt"]
+
+            # Format parametric prompts
+            if "{university}" in prompt_text or "{degree_level}" in prompt_text:
+                prompt_text = format_prompt(prompt_text, university, degree_level)
+
+            # Add control suffix
+            prompt_text = prompt_text.rstrip() + "\n\n" + CONTROL_SUFFIX
+
+            formatted_prompts[prompt_id] = {
+                **prompt_data,
+                "prompt": prompt_text
+            }
+
+        return formatted_prompts
+
+    def generate_batch_portraits(
+        self,
+        selfie_path: Path,
+        board_path: Path,
+        tier: str,
+        university: str = "",
+        degree_level: str = ""
+    ) -> List[Dict]:
+        """
+        Generate multiple portraits using tier-appropriate prompts
+
+        Args:
+            selfie_path: Path to input photo
+            board_path: Path to design board
+            tier: "free" or "premium"
+            university: University name
+            degree_level: Degree level
+
+        Returns:
+            List of dicts with {prompt_id, image_bytes, is_watermarked}
+        """
+        prompts = self.get_prompts_for_tier(tier, university, degree_level)
+        results = []
+
+        for prompt_id, prompt_data in prompts.items():
+            try:
+                # Generate image with formatted prompt
+                image_bytes = self.generate_portrait(
+                    selfie_path=selfie_path,
+                    board_path=board_path,
+                    prompt_id=prompt_id,
+                    custom_prompt=prompt_data["prompt"]
+                )
+
+                # Apply watermark if free tier
+                is_watermarked = (tier == "free")
+                if is_watermarked:
+                    image_bytes = add_watermark_to_image(
+                        image_bytes=image_bytes,
+                        tier="free",
+                        position="bottom_right"
+                    )
+
+                results.append({
+                    "prompt_id": prompt_id,
+                    "prompt_name": prompt_data["name"],
+                    "image_bytes": image_bytes,
+                    "is_watermarked": is_watermarked,
+                    "success": True,
+                    "error": None
+                })
+
+            except Exception as e:
+                results.append({
+                    "prompt_id": prompt_id,
+                    "prompt_name": prompt_data["name"],
+                    "image_bytes": None,
+                    "is_watermarked": False,
+                    "success": False,
+                    "error": str(e)
+                })
+
+        return results
 
 
 generation_service = GenerationService()
