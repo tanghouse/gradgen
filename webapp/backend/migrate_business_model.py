@@ -51,24 +51,34 @@ def run_migration():
                 ADD COLUMN IF NOT EXISTS promo_code_used VARCHAR,
                 ADD COLUMN IF NOT EXISTS generation_job_id INTEGER;
             """))
-            # Add foreign key constraint if it doesn't exist
-            try:
-                conn.execute(text("""
-                    ALTER TABLE payments
-                    ADD CONSTRAINT fk_payments_generation_job
-                    FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id);
-                """))
-            except:
-                pass  # Constraint may already exist
+            conn.commit()
+            print("   ✅ Payments table columns added\n")
+        except Exception as e:
+            print(f"   ⚠️  Payments table columns error (may already exist): {e}\n")
+            conn.rollback()
 
-            # Update currency
+        # Add foreign key constraint (separate transaction)
+        try:
+            conn.execute(text("""
+                ALTER TABLE payments
+                ADD CONSTRAINT fk_payments_generation_job
+                FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id);
+            """))
+            conn.commit()
+            print("   ✅ Payments foreign key added\n")
+        except Exception as e:
+            print(f"   ⚠️  Payments FK error (may already exist): {e}\n")
+            conn.rollback()
+
+        # Update currency (separate transaction)
+        try:
             conn.execute(text("""
                 UPDATE payments SET currency = 'gbp' WHERE currency = 'usd';
             """))
             conn.commit()
-            print("   ✅ Payments table updated\n")
+            print("   ✅ Currency updated to GBP\n")
         except Exception as e:
-            print(f"   ⚠️  Payments table error (may already have columns): {e}\n")
+            print(f"   ⚠️  Currency update error: {e}\n")
             conn.rollback()
 
         # 3. Add new columns to generation_jobs table
@@ -81,19 +91,23 @@ def run_migration():
                 ADD COLUMN IF NOT EXISTS prompts_used TEXT,
                 ADD COLUMN IF NOT EXISTS payment_id INTEGER;
             """))
-            # Add foreign key constraint
-            try:
-                conn.execute(text("""
-                    ALTER TABLE generation_jobs
-                    ADD CONSTRAINT fk_generation_jobs_payment
-                    FOREIGN KEY (payment_id) REFERENCES payments(id);
-                """))
-            except:
-                pass  # Constraint may already exist
             conn.commit()
-            print("   ✅ Generation jobs table updated\n")
+            print("   ✅ Generation jobs table columns added\n")
         except Exception as e:
-            print(f"   ⚠️  Generation jobs table error (may already have columns): {e}\n")
+            print(f"   ⚠️  Generation jobs table columns error (may already exist): {e}\n")
+            conn.rollback()
+
+        # Add foreign key constraint (separate transaction)
+        try:
+            conn.execute(text("""
+                ALTER TABLE generation_jobs
+                ADD CONSTRAINT fk_generation_jobs_payment
+                FOREIGN KEY (payment_id) REFERENCES payments(id);
+            """))
+            conn.commit()
+            print("   ✅ Generation jobs foreign key added\n")
+        except Exception as e:
+            print(f"   ⚠️  Generation jobs FK error (may already exist): {e}\n")
             conn.rollback()
 
         # 4. Create promo_codes table
