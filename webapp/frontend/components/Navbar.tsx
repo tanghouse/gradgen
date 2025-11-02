@@ -20,15 +20,10 @@ export default function Navbar() {
                 Generate
               </Link>
               <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link href="/credits" className="text-gray-600 hover:text-gray-900">
-                Buy Credits
+                My Photos
               </Link>
               <div className="flex items-center space-x-4">
-                <div className="text-sm">
-                  <span className="font-semibold">{user.credits}</span> credits
-                </div>
+                <span className="text-sm text-gray-600">{user.email}</span>
                 <button
                   onClick={logout}
                   className="text-gray-600 hover:text-gray-900"
@@ -46,7 +41,7 @@ export default function Navbar() {
                 href="/register"
                 className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
               >
-                Sign Up
+                Try Free
               </Link>
             </>
           )}

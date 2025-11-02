@@ -96,7 +96,7 @@ export default function Home() {
                 href="/register"
                 className="w-full sm:w-auto bg-yellow-400 text-primary-900 px-8 py-4 rounded-lg text-lg font-bold hover:bg-yellow-300 transition-all shadow-lg hover:shadow-xl text-center"
               >
-                Try 5 Styles Free →
+                Start Free - No Credit Card →
               </Link>
               <Link
                 href="#how-it-works"
@@ -165,9 +165,9 @@ export default function Home() {
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">✨</span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">3. Get 10 Styles</h3>
+                <h3 className="text-xl font-bold mb-2">3. Get Your Photos</h3>
                 <p className="text-gray-600">
-                  Receive 10 different professional graduation photo styles instantly.
+                  Start with 5 free watermarked photos. Upgrade for 10 unwatermarked professional shots.
                 </p>
               </div>
             </div>
