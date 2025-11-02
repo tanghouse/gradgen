@@ -14,9 +14,9 @@ class WatermarkService:
 
     # Watermark configuration
     WATERMARK_TEXT = "GradGen.AI"
-    WATERMARK_OPACITY = 0.7  # 70% opacity (much more visible)
-    WATERMARK_FONT_SIZE_RATIO = 0.08  # 8% of image height (larger)
-    WATERMARK_PADDING_RATIO = 0.03  # 3% padding from edges
+    WATERMARK_OPACITY = 0.5  # 50% opacity for diagonal pattern
+    WATERMARK_FONT_SIZE_RATIO = 0.12  # 12% of image height (very large)
+    WATERMARK_SPACING_RATIO = 1.5  # Spacing between diagonal repeats
 
     @classmethod
     def add_watermark(
@@ -44,10 +44,6 @@ class WatermarkService:
             if image.mode != "RGBA":
                 image = image.convert("RGBA")
 
-            # Create watermark layer
-            watermark_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
-            draw = ImageDraw.Draw(watermark_layer)
-
             # Calculate font size based on image dimensions
             font_size = int(image.height * cls.WATERMARK_FONT_SIZE_RATIO)
 
@@ -63,59 +59,62 @@ class WatermarkService:
                     font = ImageFont.load_default()
                     logger.warning("Using default font for watermark")
 
-            # Get text bounding box
-            bbox = draw.textbbox((0, 0), cls.WATERMARK_TEXT, font=font)
+            # Get text bounding box (using a temporary draw object)
+            temp_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+            bbox = temp_draw.textbbox((0, 0), cls.WATERMARK_TEXT, font=font)
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
-
-            # Calculate padding
-            padding = int(min(image.width, image.height) * cls.WATERMARK_PADDING_RATIO)
-
-            # Calculate position
-            if position == "bottom_right":
-                x = image.width - text_width - padding
-                y = image.height - text_height - padding
-            elif position == "bottom_left":
-                x = padding
-                y = image.height - text_height - padding
-            elif position == "top_right":
-                x = image.width - text_width - padding
-                y = padding
-            elif position == "top_left":
-                x = padding
-                y = padding
-            elif position == "center":
-                x = (image.width - text_width) // 2
-                y = (image.height - text_height) // 2
-            else:  # diagonal (bottom-right to top-left)
-                # For diagonal, we'll just use bottom_right
-                x = image.width - text_width - padding
-                y = image.height - text_height - padding
 
             # Calculate opacity (0-255)
             opacity_value = opacity if opacity is not None else cls.WATERMARK_OPACITY
             alpha = int(255 * opacity_value)
 
-            # Draw shadow/outline for better visibility
-            # Draw black outline in all 8 directions for strong contrast
-            outline_offset = max(2, font_size // 40)  # Scale outline with font size
-            for offset_x in [-outline_offset, 0, outline_offset]:
-                for offset_y in [-outline_offset, 0, outline_offset]:
-                    if offset_x != 0 or offset_y != 0:  # Skip center
-                        draw.text(
-                            (x + offset_x, y + offset_y),
-                            cls.WATERMARK_TEXT,
-                            fill=(0, 0, 0, alpha),  # Black outline
-                            font=font
-                        )
+            # Create diagonal repeating pattern across entire image
+            # Calculate spacing between watermarks
+            spacing_x = int(text_width * cls.WATERMARK_SPACING_RATIO)
+            spacing_y = int(text_height * cls.WATERMARK_SPACING_RATIO)
 
-            # Draw main watermark with semi-transparent white
-            draw.text(
-                (x, y),
-                cls.WATERMARK_TEXT,
-                fill=(255, 255, 255, alpha),
-                font=font
-            )
+            # Rotate the entire watermark layer for diagonal effect
+            # We'll create a larger canvas to accommodate rotation
+            diagonal_size = int((image.width ** 2 + image.height ** 2) ** 0.5)
+            rotated_layer = Image.new("RGBA", (diagonal_size, diagonal_size), (0, 0, 0, 0))
+            rotated_draw = ImageDraw.Draw(rotated_layer)
+
+            # Draw outline for better visibility
+            outline_offset = max(3, font_size // 30)
+
+            # Fill the rotated canvas with repeating watermarks
+            for y_pos in range(-diagonal_size // 2, diagonal_size * 2, spacing_y):
+                for x_pos in range(-diagonal_size // 2, diagonal_size * 2, spacing_x):
+                    # Draw black outline
+                    for offset_x in [-outline_offset, 0, outline_offset]:
+                        for offset_y in [-outline_offset, 0, outline_offset]:
+                            if offset_x != 0 or offset_y != 0:
+                                rotated_draw.text(
+                                    (x_pos + offset_x, y_pos + offset_y),
+                                    cls.WATERMARK_TEXT,
+                                    fill=(0, 0, 0, alpha),
+                                    font=font
+                                )
+
+                    # Draw main white text
+                    rotated_draw.text(
+                        (x_pos, y_pos),
+                        cls.WATERMARK_TEXT,
+                        fill=(255, 255, 255, alpha),
+                        font=font
+                    )
+
+            # Rotate the layer by 45 degrees (diagonal)
+            rotated_layer = rotated_layer.rotate(45, expand=False, fillcolor=(0, 0, 0, 0))
+
+            # Crop to original image size from center
+            left = (diagonal_size - image.width) // 2
+            top = (diagonal_size - image.height) // 2
+            rotated_layer = rotated_layer.crop((left, top, left + image.width, top + image.height))
+
+            # Composite onto watermark layer
+            watermark_layer = rotated_layer
 
             # Composite watermark onto original image
             watermarked = Image.alpha_composite(image, watermark_layer)

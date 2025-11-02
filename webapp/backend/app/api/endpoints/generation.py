@@ -44,12 +44,11 @@ async def create_single_generation(
     Create a single portrait generation job.
     Requires 1 credit.
     """
-    # Check credits
-    if current_user.credits < settings.CREDITS_PER_PORTRAIT:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=f"Insufficient credits. Required: {settings.CREDITS_PER_PORTRAIT}, Available: {current_user.credits}"
-        )
+    # DEPRECATED: Credit system removed. Use /generate-tier instead.
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="This endpoint is deprecated. Please use /generate-tier for tier-based generation."
+    )
 
     # Check if board exists
     board_path = generation_service.get_board_path(university, degree_level)
@@ -138,15 +137,11 @@ async def create_batch_generation(
     Create a batch portrait generation job.
     Requires 1 credit per image.
     """
-    num_images = len(files)
-    required_credits = num_images * settings.CREDITS_PER_PORTRAIT
-
-    # Check credits
-    if current_user.credits < required_credits:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=f"Insufficient credits. Required: {required_credits}, Available: {current_user.credits}"
-        )
+    # DEPRECATED: Credit system removed. Use /generate-tier instead.
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="This endpoint is deprecated. Please use /generate-tier for tier-based generation."
+    )
 
     # Check if board exists
     board_path = generation_service.get_board_path(university, degree_level)
