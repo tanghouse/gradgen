@@ -4,6 +4,8 @@ from app.models.generation_job import GenerationJob, JobStatus
 from app.models.generated_image import GeneratedImage
 from app.models.payment import Payment, PaymentStatus
 from app.models.email_verification import EmailVerificationToken
+from app.models.promo_code import PromoCode
+from app.models.referral import Referral, ReferralStatus
 
 __all__ = [
     "User",
@@ -15,4 +17,7 @@ __all__ = [
     "Payment",
     "PaymentStatus",
     "EmailVerificationToken",
+    "PromoCode",
+    "Referral",
+    "ReferralStatus",
 ]
