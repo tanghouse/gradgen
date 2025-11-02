@@ -28,7 +28,8 @@
       "Bash(poetry show:*)",
       "Bash(cat:*)",
       "Bash(cd:*)",
-      "Bash(poetry run python:*)"
+      "Bash(poetry run python:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
