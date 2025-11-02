@@ -39,12 +39,6 @@ export default function SideBySideComparison({
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {title && (
-        <h3 className="text-2xl md:text-3xl font-bold text-center mb-6 text-white">
-          {title}
-        </h3>
-      )}
-
       {!imagesLoaded && (
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>

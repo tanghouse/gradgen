@@ -60,9 +60,26 @@ export default function Home() {
               </p>
             </div>
 
+            {/* Example Selector */}
+            <div className="flex justify-center gap-2 mb-6 md:mb-8 flex-wrap px-4">
+              {EXAMPLES.map((example, idx) => (
+                <button
+                  key={example.id}
+                  onClick={() => setCurrentExample(idx)}
+                  className={`px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all shadow-md ${
+                    currentExample === idx
+                      ? 'bg-white text-primary-600 shadow-lg'
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                >
+                  {example.name}
+                </button>
+              ))}
+            </div>
+
             {/* Side by Side Comparison */}
             {mounted && EXAMPLES[currentExample] && (
-              <div className="mb-8">
+              <div className="mb-12">
                 <SideBySideComparison
                   beforeImage={EXAMPLES[currentExample].before}
                   afterImage={EXAMPLES[currentExample].after}
@@ -72,23 +89,6 @@ export default function Home() {
                 />
               </div>
             )}
-
-            {/* Example Selector */}
-            <div className="flex justify-center gap-2 mb-8 flex-wrap">
-              {EXAMPLES.map((example, idx) => (
-                <button
-                  key={example.id}
-                  onClick={() => setCurrentExample(idx)}
-                  className={`px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all ${
-                    currentExample === idx
-                      ? 'bg-white text-primary-600'
-                      : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                >
-                  {example.name}
-                </button>
-              ))}
-            </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
