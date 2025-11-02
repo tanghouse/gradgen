@@ -56,6 +56,12 @@ def create_admin_account(
             return existing_user
 
         # Create new admin user
+        # Truncate password to 72 bytes for bcrypt
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            print(f"⚠️  Password truncated to 72 bytes (bcrypt limit)")
+            password = password_bytes[:72].decode('utf-8', errors='ignore')
+
         hashed_password = pwd_context.hash(password)
 
         admin_user = User(
