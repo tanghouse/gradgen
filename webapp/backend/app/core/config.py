@@ -80,4 +80,8 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 
-settings = Settings()
+def get_settings() -> Settings:
+    """Get settings instance"""
+    return Settings()
+
+settings = get_settings()

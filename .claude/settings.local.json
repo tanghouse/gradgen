@@ -25,7 +25,10 @@
       "Bash(dig:*)",
       "Read(//Users/**)",
       "Bash(poetry add:*)",
-      "Bash(poetry show:*)"
+      "Bash(poetry show:*)",
+      "Bash(cat:*)",
+      "Bash(cd:*)",
+      "Bash(poetry run python:*)"
     ],
     "deny": [],
     "ask": []
