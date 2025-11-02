@@ -45,7 +45,7 @@ export default function SideBySideComparison({
         </div>
       )}
 
-      <div className={`grid md:grid-cols-2 gap-4 md:gap-8 ${!imagesLoaded ? 'hidden' : ''}`}>
+      <div className={`relative grid md:grid-cols-2 gap-4 md:gap-8 ${!imagesLoaded ? 'hidden' : ''}`}>
         {/* Before Image */}
         <div className="group relative overflow-hidden rounded-2xl shadow-2xl bg-gray-200 transition-transform duration-300 hover:scale-105">
           <div className="relative aspect-[3/4]">
@@ -81,11 +81,11 @@ export default function SideBySideComparison({
         </div>
       </div>
 
-      {/* Arrow indicator (desktop only) */}
-      <div className="hidden md:flex items-center justify-center -mt-32 relative z-10 pointer-events-none">
-        <div className="bg-white/90 rounded-full p-4 shadow-xl">
+      {/* Arrow indicator (desktop only) - positioned absolutely within the grid gap */}
+      <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
+        <div className="bg-white/95 rounded-full p-3 shadow-2xl">
           <svg
-            className="w-8 h-8 text-primary-600"
+            className="w-6 h-6 text-primary-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

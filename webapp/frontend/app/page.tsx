@@ -66,20 +66,20 @@ export default function Home() {
                 <button
                   key={example.id}
                   onClick={() => setCurrentExample(idx)}
-                  className={`px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all shadow-md ${
+                  className={`px-4 py-2 md:px-6 md:py-2.5 rounded-lg text-sm md:text-base font-semibold transition-all shadow-md ${
                     currentExample === idx
                       ? 'bg-white text-primary-600 shadow-lg'
                       : 'bg-white/20 text-white hover:bg-white/30'
                   }`}
                 >
-                  {example.name}
+                  Example {idx + 1}
                 </button>
               ))}
             </div>
 
             {/* Side by Side Comparison */}
             {mounted && EXAMPLES[currentExample] && (
-              <div className="mb-12">
+              <div className="mb-16 md:mb-20">
                 <SideBySideComparison
                   beforeImage={EXAMPLES[currentExample].before}
                   afterImage={EXAMPLES[currentExample].after}
