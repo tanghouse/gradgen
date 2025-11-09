@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
 from app.db.database import get_db
@@ -38,7 +38,7 @@ async def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
     # Create verification token
     token = EmailVerificationToken.generate_token()
-    expires_at = datetime.utcnow() + timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS)
 
     verification_token = EmailVerificationToken(
         user_id=db_user.id,
@@ -88,7 +88,7 @@ async def login(
     #     )
 
     # Update last login time
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = datetime.now(timezone.utc)
     db.commit()
 
     # Create access token
@@ -113,7 +113,7 @@ async def verify_email(request: EmailVerificationRequest, db: Session = Depends(
         )
 
     # Check if token has expired
-    if verification_token.expires_at < datetime.utcnow():
+    if verification_token.expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Verification token has expired. Please request a new one."
@@ -135,7 +135,7 @@ async def verify_email(request: EmailVerificationRequest, db: Session = Depends(
 
     # Mark email as verified
     user.email_verified = True
-    user.email_verified_at = datetime.utcnow()
+    user.email_verified_at = datetime.now(timezone.utc)
 
     # Mark token as used
     verification_token.used = True
@@ -176,7 +176,7 @@ async def resend_verification(request: ResendVerificationRequest, db: Session = 
 
     # Create new verification token
     token = EmailVerificationToken.generate_token()
-    expires_at = datetime.utcnow() + timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS)
 
     verification_token = EmailVerificationToken(
         user_id=user.id,
