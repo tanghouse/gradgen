@@ -298,6 +298,10 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         # Mark user as having purchased premium
         user.has_purchased_premium = True
 
+        # Queue background task to regenerate unwatermarked photos
+        from app.tasks.generation_tasks import regenerate_unwatermarked_photos
+        regenerate_task = regenerate_unwatermarked_photos.delay(user.id)
+
         # If referral discount was used, mark it as rewarded
         if user.referral_discount_eligible:
             user.referral_discount_eligible = False  # Reset for future purchases

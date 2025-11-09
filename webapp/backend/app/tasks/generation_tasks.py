@@ -271,3 +271,87 @@ def process_tier_generation(self, job_id: int):
 
     finally:
         db.close()
+
+
+@celery_app.task(bind=True)
+def regenerate_unwatermarked_photos(self, user_id: int):
+    """
+    Regenerate all watermarked photos without watermarks after premium upgrade.
+    This is called after a user purchases premium tier.
+    """
+    db = SessionLocal()
+    try:
+        # Get all completed jobs for this user that were watermarked
+        jobs = db.query(GenerationJob).filter(
+            GenerationJob.user_id == user_id,
+            GenerationJob.is_watermarked == True,
+            GenerationJob.status == JobStatus.COMPLETED
+        ).all()
+
+        if not jobs:
+            return {"status": "no_jobs", "message": "No watermarked photos to regenerate"}
+
+        total_regenerated = 0
+        temp_dir = Path("/tmp/regeneration") / str(user_id)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        for job in jobs:
+            # Get all successful images from this job
+            images = db.query(GeneratedImage).filter(
+                GeneratedImage.job_id == job.id,
+                GeneratedImage.success == True
+            ).all()
+
+            for image in images:
+                try:
+                    # Download input image from storage
+                    input_temp_path = temp_dir / f"input_{image.id}.jpg"
+                    storage_service.download_file(image.input_image_path, input_temp_path)
+
+                    # Board path is still local
+                    board_path = Path(image.board_image_path)
+
+                    # Generate unwatermarked version using the same prompt
+                    result_bytes = generation_service.generate_portrait(
+                        selfie_path=input_temp_path,
+                        board_path=board_path,
+                        custom_prompt=image.prompt_text
+                    )
+
+                    # NO watermark this time!
+
+                    # Save result to temp file
+                    output_temp_path = temp_dir / f"unwatermarked_{image.id}.png"
+                    output_temp_path.write_bytes(result_bytes)
+
+                    # Upload unwatermarked version to storage (replace watermarked version)
+                    storage_url = storage_service.upload_file(output_temp_path, image.output_image_path)
+
+                    # Clean up temp files
+                    input_temp_path.unlink(missing_ok=True)
+                    output_temp_path.unlink(missing_ok=True)
+
+                    total_regenerated += 1
+
+                except Exception as e:
+                    # Log error but continue with other images
+                    print(f"Failed to regenerate image {image.id}: {e}")
+
+        # Update all jobs to mark them as unwatermarked
+        for job in jobs:
+            job.is_watermarked = False
+
+        db.commit()
+
+        return {
+            "status": "success",
+            "user_id": user_id,
+            "jobs_updated": len(jobs),
+            "photos_regenerated": total_regenerated
+        }
+
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+    finally:
+        db.close()
