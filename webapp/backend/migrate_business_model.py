@@ -59,15 +59,26 @@ def run_migration():
 
         # Add foreign key constraint (separate transaction)
         try:
-            conn.execute(text("""
-                ALTER TABLE payments
-                ADD CONSTRAINT fk_payments_generation_job
-                FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id);
+            # Check if constraint exists first
+            result = conn.execute(text("""
+                SELECT COUNT(*) FROM information_schema.table_constraints
+                WHERE constraint_name = 'fk_payments_generation_job'
+                AND table_name = 'payments';
             """))
-            conn.commit()
-            print("   ✅ Payments foreign key added\n")
+            constraint_exists = result.scalar() > 0
+
+            if not constraint_exists:
+                conn.execute(text("""
+                    ALTER TABLE payments
+                    ADD CONSTRAINT fk_payments_generation_job
+                    FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id);
+                """))
+                conn.commit()
+                print("   ✅ Payments foreign key added\n")
+            else:
+                print("   ℹ️  Payments foreign key already exists, skipping\n")
         except Exception as e:
-            print(f"   ⚠️  Payments FK error (may already exist): {e}\n")
+            print(f"   ⚠️  Payments FK error: {e}\n")
             conn.rollback()
 
         # Update currency (separate transaction)
@@ -99,15 +110,26 @@ def run_migration():
 
         # Add foreign key constraint (separate transaction)
         try:
-            conn.execute(text("""
-                ALTER TABLE generation_jobs
-                ADD CONSTRAINT fk_generation_jobs_payment
-                FOREIGN KEY (payment_id) REFERENCES payments(id);
+            # Check if constraint exists first
+            result = conn.execute(text("""
+                SELECT COUNT(*) FROM information_schema.table_constraints
+                WHERE constraint_name = 'fk_generation_jobs_payment'
+                AND table_name = 'generation_jobs';
             """))
-            conn.commit()
-            print("   ✅ Generation jobs foreign key added\n")
+            constraint_exists = result.scalar() > 0
+
+            if not constraint_exists:
+                conn.execute(text("""
+                    ALTER TABLE generation_jobs
+                    ADD CONSTRAINT fk_generation_jobs_payment
+                    FOREIGN KEY (payment_id) REFERENCES payments(id);
+                """))
+                conn.commit()
+                print("   ✅ Generation jobs foreign key added\n")
+            else:
+                print("   ℹ️  Generation jobs foreign key already exists, skipping\n")
         except Exception as e:
-            print(f"   ⚠️  Generation jobs FK error (may already exist): {e}\n")
+            print(f"   ⚠️  Generation jobs FK error: {e}\n")
             conn.rollback()
 
         # 4. Create promo_codes table
