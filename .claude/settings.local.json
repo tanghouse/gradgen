@@ -29,7 +29,14 @@
       "Bash(cat:*)",
       "Bash(cd:*)",
       "Bash(poetry run python:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway status:*)",
+      "Bash(railway service)",
+      "Bash(railway link --help:*)",
+      "Bash(cd /Users/Haichen Shi/Library/CloudStorage/OneDrive-BaringaPartnersLLP/Desktop/Projects/tanghouse/webapp/backend && railway up:*)",
+      "Bash(railway run:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

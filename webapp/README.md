@@ -1,15 +1,17 @@
-# GradGen Web Application
+# GradGen - AI Graduation Portrait Generator
 
-A complete full-stack graduation portrait generation platform built with Next.js and FastAPI. Transform portraits into professional graduation photos with accurate university regalia using AI.
+Transform casual photos into professional graduation portraits with AI-powered regalia generation.
 
-🚀 **Status**: ✅ Fully Functional - Ready for Testing and Deployment
+🚀 **Status**: ✅ Production Ready | 🎯 **Latest**: Nov 2025 - Tier limits, mobile fixes, admin tools
 
-## 📚 Quick Links
+## 🚀 Quick Links
 
-- **[Quick Start Guide](QUICKSTART.md)** - Get running locally in 15 minutes
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
-- **[Backend README](backend/README.md)** - Backend API documentation
-- **[Frontend README](frontend/README.md)** - Frontend documentation
+| Document | Purpose | For |
+|----------|---------|-----|
+| **[Admin Quick Start](./docs/ADMIN_QUICK_START.md)** | ⭐ Manage & reset accounts | Testing/Admin |
+| **[Testing Checklist](./docs/TESTING_CHECKLIST.md)** | 30-test comprehensive guide | QA |
+| **[Quick Start](./docs/QUICKSTART.md)** | Local development setup | Developers |
+| **[Deployment Guide](./docs/DEPLOYMENT.md)** | Production deployment | DevOps |
 
 ## Project Structure
 
@@ -25,12 +27,21 @@ webapp/
 │   │   ├── services/ # Business logic
 │   │   ├── tasks/    # Celery tasks
 │   │   └── main.py   # FastAPI app
+│   ├── admin.py      # Standalone admin tool
+│   ├── manage_test_accounts.py  # CLI account manager
 │   └── README.md
-└── frontend/         # Next.js frontend
-    ├── app/          # Next.js 15 App Router
-    ├── components/   # React components
-    ├── lib/          # API client & utilities
-    └── public/       # Static assets
+├── frontend/         # Next.js frontend
+│   ├── app/          # Next.js 15 App Router
+│   ├── components/   # React components
+│   ├── lib/          # API client & utilities
+│   └── public/       # Static assets
+└── docs/             # Documentation
+    ├── README.md              # Documentation index
+    ├── QUICKSTART.md          # Local development setup
+    ├── DEPLOYMENT.md          # Production deployment
+    ├── TESTING_CHECKLIST.md   # 30-test QA guide
+    ├── ADMIN_QUICK_START.md   # Browser-based admin (recommended)
+    └── [more docs...]
 ```
 
 ## Quick Start
@@ -92,6 +103,8 @@ npm run dev
 ```
 
 The frontend will be running at http://localhost:3000
+
+For detailed setup instructions, see **[docs/QUICKSTART.md](./docs/QUICKSTART.md)**
 
 ## ✅ Complete Features
 
@@ -163,16 +176,37 @@ The frontend will be running at http://localhost:3000
   - TypeScript type safety
   - Tailwind CSS styling
 
+## 🧪 Testing & Admin
+
+### For Testers & QA
+Use the **[Testing Checklist](./docs/TESTING_CHECKLIST.md)** for comprehensive 30-test coverage.
+
+### For Admins & Account Management
+**Recommended:** Use the **[Admin Quick Start](./docs/ADMIN_QUICK_START.md)** browser console method to:
+- Reset accounts to fresh state (30 seconds)
+- Toggle between free and premium tiers
+- Check account status and generation limits
+- Test complete user flows
+
+**Why browser method?** Railway CLI and direct database access have connection issues. The browser method uses the deployed API with your login token.
+
+**All Admin Documentation:**
+- **[Admin Quick Start](./docs/ADMIN_QUICK_START.md)** - Browser console (easiest, recommended)
+- **[Admin Panel Instructions](./docs/ADMIN_PANEL_INSTRUCTIONS.md)** - Complete browser guide
+- **[Account Management Guide](./docs/ACCOUNT_MANAGEMENT_GUIDE.md)** - CLI tools reference
+- **[Reset Account Guide](./docs/RESET_ACCOUNT_GUIDE.md)** - Multiple reset methods
+
+---
+
 ## 🎯 Optional Enhancements
 
 These features can be added based on your needs:
 
 ### Backend
 - [ ] Database migrations with Alembic
-- [ ] S3 file storage (currently using local storage)
+- [x] S3/R2 file storage (Cloudflare R2 integrated)
 - [ ] Unit and integration tests
 - [ ] Rate limiting
-- [ ] Admin panel
 - [ ] Email notifications
 - [ ] Multiple prompt selection
 - [ ] Batch download as ZIP
@@ -188,10 +222,10 @@ These features can be added based on your needs:
 - [ ] Internationalization (i18n)
 
 ### Infrastructure
-- [ ] Docker Compose configuration (see DEPLOYMENT.md)
+- [ ] Docker Compose configuration
 - [ ] CI/CD pipeline
 - [ ] Automated testing
-- [ ] Monitoring and alerting
+- [ ] Monitoring and alerting (Sentry, BetterStack)
 - [ ] CDN for static assets
 
 ## Tech Stack
@@ -278,10 +312,50 @@ When the backend is running, visit:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Contributing
+## 🚀 Deployment
 
-This is a graduation portrait generation platform. The core generation logic is ported from the research codebase in `src/`.
+Ready to deploy to production? See **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** for complete Railway + Vercel deployment guide.
 
-## License
+**Deployment Stack:**
+- **Backend**: Railway (FastAPI + Celery worker + PostgreSQL + Redis)
+- **Frontend**: Vercel (Next.js)
+- **DNS & CDN**: Cloudflare
+- **Storage**: Cloudflare R2
+
+**Estimated Setup Time**: 2-3 hours
+**Monthly Cost**: $17-25 (starter), $72-97 (growth)
+
+---
+
+## 📚 Complete Documentation
+
+All documentation is in the **[`/docs`](./docs/)** folder:
+
+| Document | Purpose |
+|----------|---------|
+| **[Docs Index](./docs/README.md)** | Complete documentation overview |
+| **[Quick Start](./docs/QUICKSTART.md)** | Local development setup |
+| **[Deployment](./docs/DEPLOYMENT.md)** | Production deployment guide |
+| **[Testing Checklist](./docs/TESTING_CHECKLIST.md)** | 30-test comprehensive QA |
+| **[Admin Quick Start](./docs/ADMIN_QUICK_START.md)** | Browser-based account management |
+| **[Backend README](./backend/README.md)** | FastAPI backend documentation |
+| **[Frontend README](./frontend/README.md)** | Next.js frontend documentation |
+
+---
+
+## 🤝 Contributing
+
+This is a graduation portrait generation platform. The core generation logic is ported from the research codebase in the root `src/` directory.
+
+**Key Areas for Contribution:**
+- Testing and QA (see [Testing Checklist](./docs/TESTING_CHECKLIST.md))
+- UI/UX improvements
+- Additional university templates
+- Performance optimizations
+- Documentation improvements
+
+---
+
+## 📄 License
 
 See main project LICENSE file.

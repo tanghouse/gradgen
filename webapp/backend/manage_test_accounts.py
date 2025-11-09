@@ -50,7 +50,19 @@ def list_test_accounts(db):
 
     for user in users:
         job_count = db.query(GenerationJob).filter(GenerationJob.user_id == user.id).count()
-        tier = "Premium" if user.has_purchased_premium else "Free (used)" if user.has_used_free_tier else "Free (unused)"
+
+        # Determine tier status
+        premium_used = user.premium_generations_used if hasattr(user, 'premium_generations_used') and user.premium_generations_used else 0
+        premium_remaining = max(0, 2 - premium_used) if user.has_purchased_premium else 0
+
+        if user.has_purchased_premium and premium_remaining == 0:
+            tier = "Premium (exhausted)"
+        elif user.has_purchased_premium:
+            tier = f"Premium ({premium_remaining}/2 remaining)"
+        elif user.has_used_free_tier:
+            tier = "Free (used)"
+        else:
+            tier = "Free (unused)"
 
         print(f"\n📧 {user.email}")
         print(f"   Name: {user.full_name}")
@@ -154,6 +166,7 @@ def reset_account(db, email: str):
     # Reset tier
     user.has_used_free_tier = False
     user.has_purchased_premium = False
+    user.premium_generations_used = 0
     user.referral_discount_eligible = False
 
     db.commit()
