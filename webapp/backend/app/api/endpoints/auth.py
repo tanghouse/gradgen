@@ -80,11 +80,12 @@ async def login(
         )
 
     # Check if email is verified (REQUIRED)
-    if not user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email not verified. Please check your email for the verification link."
-        )
+    # TODO: Re-enable after Resend is configured
+    # if not user.email_verified:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Email not verified. Please check your email for the verification link."
+    #     )
 
     # Update last login time
     user.last_login_at = datetime.utcnow()
