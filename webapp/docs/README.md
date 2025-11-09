@@ -10,6 +10,7 @@ Welcome to the GradGen documentation. This folder contains all guides for setup,
 |----------|---------|----------|
 | **[Quick Start](./QUICKSTART.md)** | Local development setup | Developers |
 | **[Deployment Guide](./DEPLOYMENT.md)** | Production deployment to Railway + Vercel | DevOps |
+| **[Email Setup Guide](./EMAIL_SETUP_GUIDE.md)** | Configure Resend for email verification | DevOps/Admin |
 
 ### Testing & Admin
 
