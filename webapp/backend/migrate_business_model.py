@@ -11,21 +11,36 @@ from sqlalchemy import create_engine, text
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    print("❌ ERROR: DATABASE_URL environment variable not set")
-    print("\nPlease set it first:")
-    print("  export DATABASE_URL='your_database_url'")
-    print("\nOr run on Railway where it's already set.")
+    print("❌ ERROR: DATABASE_URL environment variable not set", flush=True)
+    print("\nPlease set it first:", flush=True)
+    print("  export DATABASE_URL='your_database_url'", flush=True)
+    print("\nOr run on Railway where it's already set.", flush=True)
     sys.exit(1)
+
+print(f"📡 Connecting to database...", flush=True)
+print(f"   Database URL: {DATABASE_URL[:20]}...{DATABASE_URL[-20:]}", flush=True)
 
 def run_migration():
     """Apply database schema changes for new business model"""
-    engine = create_engine(DATABASE_URL)
+    try:
+        engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
+        print("✅ Database engine created", flush=True)
+    except Exception as e:
+        print(f"❌ Failed to create database engine: {e}", flush=True)
+        sys.exit(1)
 
-    with engine.connect() as conn:
-        print("🚀 Starting business model migration...\n")
+    try:
+        conn = engine.connect()
+        print("✅ Database connection established", flush=True)
+    except Exception as e:
+        print(f"❌ Failed to connect to database: {e}", flush=True)
+        sys.exit(1)
+
+    with conn:
+        print("🚀 Starting business model migration...\n", flush=True)
 
         # 1. Add new columns to users table
-        print("📝 Step 1: Updating users table...")
+        print("📝 Step 1: Updating users table...", flush=True)
         try:
             conn.execute(text("""
                 ALTER TABLE users
@@ -35,13 +50,13 @@ def run_migration():
                 ADD COLUMN IF NOT EXISTS referral_code VARCHAR UNIQUE;
             """))
             conn.commit()
-            print("   ✅ Users table updated\n")
+            print("   ✅ Users table updated\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Users table error (may already have columns): {e}\n")
+            print(f"   ⚠️  Users table error (may already have columns): {e}\n", flush=True)
             conn.rollback()
 
         # 2. Add new columns to payments table
-        print("📝 Step 2: Updating payments table...")
+        print("📝 Step 2: Updating payments table...", flush=True)
         try:
             conn.execute(text("""
                 ALTER TABLE payments
@@ -52,9 +67,9 @@ def run_migration():
                 ADD COLUMN IF NOT EXISTS generation_job_id INTEGER;
             """))
             conn.commit()
-            print("   ✅ Payments table columns added\n")
+            print("   ✅ Payments table columns added\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Payments table columns error (may already exist): {e}\n")
+            print(f"   ⚠️  Payments table columns error (may already exist): {e}\n", flush=True)
             conn.rollback()
 
         # Add foreign key constraint (separate transaction)
@@ -74,11 +89,11 @@ def run_migration():
                     FOREIGN KEY (generation_job_id) REFERENCES generation_jobs(id);
                 """))
                 conn.commit()
-                print("   ✅ Payments foreign key added\n")
+                print("   ✅ Payments foreign key added\n", flush=True)
             else:
-                print("   ℹ️  Payments foreign key already exists, skipping\n")
+                print("   ℹ️  Payments foreign key already exists, skipping\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Payments FK error: {e}\n")
+            print(f"   ⚠️  Payments FK error: {e}\n", flush=True)
             conn.rollback()
 
         # Update currency (separate transaction)
@@ -87,13 +102,13 @@ def run_migration():
                 UPDATE payments SET currency = 'gbp' WHERE currency = 'usd';
             """))
             conn.commit()
-            print("   ✅ Currency updated to GBP\n")
+            print("   ✅ Currency updated to GBP\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Currency update error: {e}\n")
+            print(f"   ⚠️  Currency update error: {e}\n", flush=True)
             conn.rollback()
 
         # 3. Add new columns to generation_jobs table
-        print("📝 Step 3: Updating generation_jobs table...")
+        print("📝 Step 3: Updating generation_jobs table...", flush=True)
         try:
             conn.execute(text("""
                 ALTER TABLE generation_jobs
@@ -103,9 +118,9 @@ def run_migration():
                 ADD COLUMN IF NOT EXISTS payment_id INTEGER;
             """))
             conn.commit()
-            print("   ✅ Generation jobs table columns added\n")
+            print("   ✅ Generation jobs table columns added\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Generation jobs table columns error (may already exist): {e}\n")
+            print(f"   ⚠️  Generation jobs table columns error (may already exist): {e}\n", flush=True)
             conn.rollback()
 
         # Add foreign key constraint (separate transaction)
@@ -125,15 +140,15 @@ def run_migration():
                     FOREIGN KEY (payment_id) REFERENCES payments(id);
                 """))
                 conn.commit()
-                print("   ✅ Generation jobs foreign key added\n")
+                print("   ✅ Generation jobs foreign key added\n", flush=True)
             else:
-                print("   ℹ️  Generation jobs foreign key already exists, skipping\n")
+                print("   ℹ️  Generation jobs foreign key already exists, skipping\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Generation jobs FK error: {e}\n")
+            print(f"   ⚠️  Generation jobs FK error: {e}\n", flush=True)
             conn.rollback()
 
         # 4. Create promo_codes table
-        print("📝 Step 4: Creating promo_codes table...")
+        print("📝 Step 4: Creating promo_codes table...", flush=True)
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS promo_codes (
@@ -156,13 +171,13 @@ def run_migration():
                 CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code);
             """))
             conn.commit()
-            print("   ✅ Promo codes table created\n")
+            print("   ✅ Promo codes table created\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Promo codes table error (may already exist): {e}\n")
+            print(f"   ⚠️  Promo codes table error (may already exist): {e}\n", flush=True)
             conn.rollback()
 
         # 5. Create referrals table
-        print("📝 Step 5: Creating referrals table...")
+        print("📝 Step 5: Creating referrals table...", flush=True)
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS referrals (
@@ -184,17 +199,17 @@ def run_migration():
                 CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(referral_code);
             """))
             conn.commit()
-            print("   ✅ Referrals table created\n")
+            print("   ✅ Referrals table created\n", flush=True)
         except Exception as e:
-            print(f"   ⚠️  Referrals table error (may already exist): {e}\n")
+            print(f"   ⚠️  Referrals table error (may already exist): {e}\n", flush=True)
             conn.rollback()
 
-        print("\n✅ Migration completed successfully!")
-        print("\n📋 Next steps:")
-        print("  1. Generate referral codes for existing users")
-        print("  2. Create initial promo codes (if needed)")
-        print("  3. Test the new generation flow")
-        print("  4. Update frontend to use new business model\n")
+        print("\n✅ Migration completed successfully!", flush=True)
+        print("\n📋 Next steps:", flush=True)
+        print("  1. Generate referral codes for existing users", flush=True)
+        print("  2. Create initial promo codes (if needed)", flush=True)
+        print("  3. Test the new generation flow", flush=True)
+        print("  4. Update frontend to use new business model\n", flush=True)
 
 
 if __name__ == "__main__":

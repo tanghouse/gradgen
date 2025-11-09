@@ -3,10 +3,10 @@ set -e
 
 echo "🚀 Starting GradGen backend on Railway..."
 
-# Run database migration
+# Run database migration with timeout
 echo "📝 Running database migration..."
-python migrate_business_model.py || {
-    echo "⚠️  Migration failed, but continuing..."
+timeout 30 python migrate_business_model.py || {
+    echo "⚠️  Migration failed or timed out (exit code: $?), but continuing..."
 }
 
 # Get port from environment or use default
