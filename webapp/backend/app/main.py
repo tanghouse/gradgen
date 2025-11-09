@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
-from app.api.endpoints import auth, users, generation, payments, oauth, referrals
+from app.api.endpoints import auth, users, generation, payments, oauth, referrals, admin
 from app.db.database import Base, engine
 # from app.db.migrations import run_migrations  # Disabled: migrations run in start.sh
 import os
@@ -42,6 +42,7 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(generation.router, prefix="/api/generation", tags=["generation"])
 app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
 app.include_router(referrals.router, prefix="/api/referrals", tags=["referrals"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 # Mount static files for serving uploaded and generated images
 os.makedirs("uploads", exist_ok=True)
