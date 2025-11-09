@@ -46,6 +46,7 @@ def run_migration():
                 ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS has_used_free_tier BOOLEAN DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS has_purchased_premium BOOLEAN DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS premium_generations_used INTEGER DEFAULT 0,
                 ADD COLUMN IF NOT EXISTS referral_discount_eligible BOOLEAN DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS referral_code VARCHAR UNIQUE;
             """))

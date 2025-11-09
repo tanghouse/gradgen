@@ -18,6 +18,7 @@ class User(Base):
     # New business model fields
     has_used_free_tier = Column(Boolean, default=False)  # True after generating 5 free photos
     has_purchased_premium = Column(Boolean, default=False)  # True after buying £19.99/£39.99
+    premium_generations_used = Column(Integer, default=0)  # Track number of premium generations used (max 2)
     referral_discount_eligible = Column(Boolean, default=False)  # True after 3 successful referrals
     referral_code = Column(String, unique=True, index=True, nullable=True)  # User's personal referral code
 

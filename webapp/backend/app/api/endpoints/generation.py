@@ -392,7 +392,7 @@ async def generate_with_tier(
     Premium tier:
     - 5 random prompts, 5 unwatermarked photos
     - Requires has_purchased_premium = True
-    - Can be used after purchasing
+    - Can be used 2 times (2 generation opportunities)
 
     Returns job ID to poll for status.
     """
@@ -401,6 +401,12 @@ async def generate_with_tier(
     if not current_user.has_used_free_tier:
         tier = "free"
     elif current_user.has_purchased_premium:
+        # Check if user has premium generations left
+        if current_user.premium_generations_used >= 2:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have used all your premium generation opportunities (2/2). Thank you for using GradGen!"
+            )
         tier = "premium"
     else:
         raise HTTPException(
@@ -467,6 +473,8 @@ async def generate_with_tier(
     # Mark tier as used (before committing, in case of failure)
     if tier == "free":
         current_user.has_used_free_tier = True
+    elif tier == "premium":
+        current_user.premium_generations_used += 1
 
     db.commit()
     db.refresh(job)
@@ -488,17 +496,25 @@ async def get_tier_status(
     Get user's current tier status
 
     Returns:
-    - tier: "free", "premium", or "needs_payment"
+    - tier: "free", "premium", "premium_exhausted", or "needs_payment"
     - has_used_free_tier: Boolean
     - has_purchased_premium: Boolean
+    - premium_generations_used: Integer (0-2)
+    - premium_generations_remaining: Integer (0-2)
     - can_generate: Boolean
     """
+    premium_generations_used = current_user.premium_generations_used if current_user.premium_generations_used else 0
+    premium_generations_remaining = max(0, 2 - premium_generations_used)
+
     if not current_user.has_used_free_tier:
         tier = "free"
         can_generate = True
-    elif current_user.has_purchased_premium:
+    elif current_user.has_purchased_premium and premium_generations_remaining > 0:
         tier = "premium"
         can_generate = True
+    elif current_user.has_purchased_premium and premium_generations_remaining == 0:
+        tier = "premium_exhausted"
+        can_generate = False
     else:
         tier = "needs_payment"
         can_generate = False
@@ -507,8 +523,11 @@ async def get_tier_status(
         "tier": tier,
         "has_used_free_tier": current_user.has_used_free_tier,
         "has_purchased_premium": current_user.has_purchased_premium,
+        "premium_generations_used": premium_generations_used,
+        "premium_generations_remaining": premium_generations_remaining,
         "can_generate": can_generate,
-        "message": "Free tier available" if tier == "free" else
-                   "Premium tier active" if tier == "premium" else
+        "message": "Free tier available (5 watermarked photos)" if tier == "free" else
+                   f"Premium tier active ({premium_generations_remaining} generation{'s' if premium_generations_remaining != 1 else ''} remaining)" if tier == "premium" else
+                   "All premium generations used (2/2)" if tier == "premium_exhausted" else
                    "Please purchase premium tier to continue"
     }
