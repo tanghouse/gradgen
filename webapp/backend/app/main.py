@@ -4,17 +4,21 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.endpoints import auth, users, generation, payments, oauth, referrals
 from app.db.database import Base, engine
-from app.db.migrations import run_migrations
+# from app.db.migrations import run_migrations  # Disabled: migrations run in start.sh
 import os
 
+# IMPORTANT: Migrations are now run in start.sh BEFORE the app starts
+# This prevents table lock issues and startup hangs
+# The lines below are commented out to avoid duplicate migration attempts
+
 # Create database tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)  # Disabled: can cause locks
 
 # Run migrations for email verification and OAuth
-try:
-    run_migrations()
-except Exception as e:
-    print(f"Migration warning: {e}")
+# try:
+#     run_migrations()
+# except Exception as e:
+#     print(f"Migration warning: {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

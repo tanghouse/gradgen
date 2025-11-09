@@ -3,16 +3,41 @@ set -e
 
 echo "🚀 Starting GradGen backend on Railway..."
 
-# TEMPORARILY SKIP MIGRATION to test if app can start
-echo "⚠️  SKIPPING migration temporarily for diagnostics..."
-# timeout 30 python migrate_business_model.py || {
-#     echo "⚠️  Migration failed or timed out (exit code: $?), but continuing..."
-# }
+# Run migrations before starting the app
+# This runs outside of app import to avoid table locks
+echo "📝 Running database migrations..."
+
+# First, run the basic schema creation and old migrations
+python -c "
+from app.db.database import Base, engine
+from app.db.migrations import run_migrations
+import sys
+
+print('🔧 Creating database tables...', flush=True)
+try:
+    Base.metadata.create_all(bind=engine)
+    print('✅ Tables created', flush=True)
+except Exception as e:
+    print(f'⚠️  Table creation error: {e}', flush=True)
+
+print('🔧 Running email/OAuth migrations...', flush=True)
+try:
+    run_migrations()
+    print('✅ Email/OAuth migrations complete', flush=True)
+except Exception as e:
+    print(f'⚠️  Migration error: {e}', flush=True)
+" || echo "⚠️  Initial migrations had errors, continuing..."
+
+# Then run business model migration
+echo "🔧 Running business model migration..."
+timeout 60 python migrate_business_model.py || {
+    echo "⚠️  Business model migration failed or timed out (exit code: $?), but continuing..."
+}
 
 # Get port from environment or use default
 PORT=${PORT:-8000}
 echo "🌐 Starting server on port $PORT..."
 
-# Start FastAPI application with verbose output
+# Start FastAPI application
 echo "🔍 Starting uvicorn..."
-exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level info
