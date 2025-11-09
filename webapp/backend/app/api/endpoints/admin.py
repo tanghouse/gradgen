@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import User
 from app.models.generation_job import GenerationJob
-from app.api.dependencies import get_current_user
+from app.api.deps import get_current_active_user
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -22,7 +22,7 @@ class ResetAccountResponse(BaseModel):
 
 @router.post("/reset-account", response_model=ResetAccountResponse)
 def reset_account_for_testing(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
