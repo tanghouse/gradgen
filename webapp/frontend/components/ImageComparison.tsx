@@ -5,10 +5,10 @@ import api from '@/lib/api';
 
 interface ImageComparisonProps {
   imageId: number;
+  showOriginal?: boolean; // Optional: control whether to show original
 }
 
-export default function ImageComparison({ imageId }: ImageComparisonProps) {
-  const [inputImageUrl, setInputImageUrl] = useState<string>('');
+export default function ImageComparison({ imageId, showOriginal = false }: ImageComparisonProps) {
   const [outputImageUrl, setOutputImageUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -25,33 +25,28 @@ export default function ImageComparison({ imageId }: ImageComparisonProps) {
         setLoading(true);
         setError('');
 
-        // Fetch both images with authentication
-        const [inputResponse, outputResponse] = await Promise.all([
-          api.get(`/generation/inputs/${imageId}`, { responseType: 'blob' }),
-          api.get(`/generation/results/${imageId}`, { responseType: 'blob' }),
-        ]);
+        // Only fetch the generated result (much more efficient!)
+        const outputResponse = await api.get(`/generation/results/${imageId}`, { responseType: 'blob' });
 
-        // Create blob URLs
-        const inputUrl = URL.createObjectURL(new Blob([inputResponse.data]));
+        // Create blob URL
         const outputUrl = URL.createObjectURL(new Blob([outputResponse.data]));
 
-        setInputImageUrl(inputUrl);
         setOutputImageUrl(outputUrl);
         setRetryCount(0); // Reset retry count on success
       } catch (err: any) {
-        console.error('Failed to load images:', err);
+        console.error('Failed to load image:', err);
 
-        // Check if it's a 404 (images not ready yet) and we haven't exceeded max retries
+        // Check if it's a 404 (image not ready yet) and we haven't exceeded max retries
         if (err.response?.status === 404 && retryCount < MAX_RETRIES) {
-          setError(`Images not ready yet. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+          setError(`Image not ready yet. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
           // Retry after delay
           retryTimeout = setTimeout(() => {
             setRetryCount(prev => prev + 1);
           }, RETRY_DELAY);
         } else if (retryCount >= MAX_RETRIES) {
-          setError('Images are still processing. Please refresh the page in a moment.');
+          setError('Image is still processing. Please refresh the page in a moment.');
         } else {
-          setError('Failed to load images');
+          setError('Failed to load image');
         }
       } finally {
         setLoading(false);
@@ -60,9 +55,8 @@ export default function ImageComparison({ imageId }: ImageComparisonProps) {
 
     loadImages();
 
-    // Cleanup blob URLs and timeout on unmount
+    // Cleanup blob URL and timeout on unmount
     return () => {
-      if (inputImageUrl) URL.revokeObjectURL(inputImageUrl);
       if (outputImageUrl) URL.revokeObjectURL(outputImageUrl);
       if (retryTimeout) clearTimeout(retryTimeout);
     };
@@ -85,34 +79,14 @@ export default function ImageComparison({ imageId }: ImageComparisonProps) {
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      {/* Original Image */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 mb-2">Original</p>
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-          {inputImageUrl && (
-            <img
-              src={inputImageUrl}
-              alt="Original uploaded image"
-              className="w-full h-auto"
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Generated Result */}
-      <div>
-        <p className="text-sm font-semibold text-gray-700 mb-2">Generated Result</p>
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-          {outputImageUrl && (
-            <img
-              src={outputImageUrl}
-              alt="Generated graduation portrait"
-              className="w-full h-auto"
-            />
-          )}
-        </div>
-      </div>
+    <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+      {outputImageUrl && (
+        <img
+          src={outputImageUrl}
+          alt="Generated graduation portrait"
+          className="w-full h-auto"
+        />
+      )}
     </div>
   );
 }

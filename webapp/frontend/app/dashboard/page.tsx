@@ -294,34 +294,37 @@ export default function DashboardPage() {
                     {/* Generated Images */}
                     {job.generated_images && job.generated_images.length > 0 && (
                       <div className="space-y-4">
-                        <h4 className="text-sm font-semibold text-gray-700">Results:</h4>
-                        {job.generated_images.map((img) => (
-                          <div key={img.id} className="border border-gray-200 rounded-lg p-4 bg-white">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xl">{img.success ? '✅' : '❌'}</span>
-                                <p className="text-sm font-medium">{img.original_filename}</p>
-                              </div>
-                              {img.success && img.output_image_path && (
-                                <button
-                                  onClick={() => handleDownload(img.id, img.original_filename)}
-                                  className="bg-primary-600 text-white px-4 py-2 rounded text-sm hover:bg-primary-700"
-                                >
-                                  Download
-                                </button>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                          {job.completed_images} / {job.total_images} Photos Generated
+                          {job.is_watermarked && <span className="ml-2 text-xs text-orange-600">(Watermarked - Free Tier)</span>}
+                          {!job.is_watermarked && <span className="ml-2 text-xs text-green-600">(Premium - No Watermark)</span>}
+                        </h4>
+
+                        {/* Display photos in a grid (much more efficient!) */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {job.generated_images.map((img) => (
+                            <div key={img.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                              {img.success && img.output_image_path ? (
+                                <>
+                                  <ImageComparison imageId={img.id} />
+                                  <div className="p-3">
+                                    <button
+                                      onClick={() => handleDownload(img.id, img.original_filename)}
+                                      className="w-full bg-primary-600 text-white px-3 py-2 rounded text-sm hover:bg-primary-700 transition-colors"
+                                    >
+                                      Download
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="p-4 text-center">
+                                  <span className="text-2xl mb-2 block">❌</span>
+                                  <p className="text-xs text-red-600">{img.error_message || 'Failed'}</p>
+                                </div>
                               )}
                             </div>
-
-                            {img.error_message && (
-                              <p className="text-xs text-red-600 mb-3">{img.error_message}</p>
-                            )}
-
-                            {/* Before/After Images */}
-                            {img.success && img.output_image_path && (
-                              <ImageComparison imageId={img.id} />
-                            )}
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
