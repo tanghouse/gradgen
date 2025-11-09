@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.models import User, GenerationJob, GeneratedImage
+from app.models import User, GenerationJob, GeneratedImage, EmailVerificationToken, CreditTransaction
 from app.services.referral_service import ReferralService
 from app.services.storage_service import storage_service
 
@@ -209,6 +209,8 @@ def delete_account(db, email: str):
     print("   - User account")
     print("   - All generation jobs")
     print("   - All uploaded/generated files")
+    print("   - Email verification tokens")
+    print("   - Credit transactions")
     print("\n   Type 'DELETE' to confirm:")
 
     confirm = input("   > ")
@@ -233,6 +235,16 @@ def delete_account(db, email: str):
             db.delete(image)
 
         db.delete(job)
+
+    # Delete email verification tokens
+    tokens = db.query(EmailVerificationToken).filter(EmailVerificationToken.user_id == user.id).all()
+    for token in tokens:
+        db.delete(token)
+
+    # Delete credit transactions
+    transactions = db.query(CreditTransaction).filter(CreditTransaction.user_id == user.id).all()
+    for transaction in transactions:
+        db.delete(transaction)
 
     # Delete user
     db.delete(user)
