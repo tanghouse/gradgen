@@ -174,6 +174,23 @@ def reset_account(db, email: str):
     print(f"   ✅ Deleted {len(jobs)} jobs and {deleted_files} files")
     print(f"   ✅ Reset to Free (unused) tier")
 
+    # Check email verification status
+    if not user.email_verified:
+        token_count = db.query(EmailVerificationToken).filter(
+            EmailVerificationToken.user_id == user.id,
+            EmailVerificationToken.used == False
+        ).count()
+        print(f"\n   ⚠️  Email not verified ({token_count} unused tokens)")
+        if token_count > 0:
+            print(f"   💡 Old verification tokens still exist - user can check email")
+        else:
+            print(f"   💡 No unused tokens - request new verification email:")
+            print(f"      curl -X POST https://gradgen-production.up.railway.app/api/auth/resend-verification \\")
+            print(f"           -H 'Content-Type: application/json' \\")
+            print(f"           -d '{{\"email\": \"{user.email}\"}}'")
+    else:
+        print(f"   ✅ Email already verified")
+
 
 def toggle_tier(db, email: str):
     """Toggle account tier."""
