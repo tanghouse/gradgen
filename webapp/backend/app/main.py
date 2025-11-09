@@ -57,4 +57,5 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    """Health check endpoint for Railway"""
+    return {"status": "healthy", "service": "gradgen-api"}
