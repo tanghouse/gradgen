@@ -7,10 +7,9 @@ echo "🚀 Starting GradGen backend on Railway..."
 # This runs outside of app import to avoid table locks
 echo "📝 Running database migrations..."
 
-# First, run the basic schema creation and old migrations
-python -c "
+# First, run the basic schema creation
+timeout 30 python -c "
 from app.db.database import Base, engine
-from app.db.migrations import run_migrations
 import sys
 
 print('🔧 Creating database tables...', flush=True)
@@ -19,6 +18,13 @@ try:
     print('✅ Tables created', flush=True)
 except Exception as e:
     print(f'⚠️  Table creation error: {e}', flush=True)
+    sys.exit(1)
+" || echo "⚠️  Table creation timed out or failed, continuing..."
+
+# Then run email/OAuth migrations with timeout
+timeout 30 python -c "
+from app.db.migrations import run_migrations
+import sys
 
 print('🔧 Running email/OAuth migrations...', flush=True)
 try:
@@ -26,7 +32,7 @@ try:
     print('✅ Email/OAuth migrations complete', flush=True)
 except Exception as e:
     print(f'⚠️  Migration error: {e}', flush=True)
-" || echo "⚠️  Initial migrations had errors, continuing..."
+" || echo "⚠️  Email/OAuth migrations timed out or failed, continuing..."
 
 # Then run business model migration
 echo "🔧 Running business model migration..."

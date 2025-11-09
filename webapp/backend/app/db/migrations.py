@@ -1,12 +1,26 @@
 """
 Database migrations - runs automatically on startup
 """
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
 from app.db.database import engine
+import os
 
 
 def run_migrations():
     """Run database migrations for email verification and OAuth support."""
+
+    # Create engine with shorter timeout for Railway
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if DATABASE_URL:
+        migration_engine = create_engine(
+            DATABASE_URL,
+            connect_args={
+                "connect_timeout": 10,
+                "options": "-c statement_timeout=30000"  # 30 second query timeout
+            }
+        )
+    else:
+        migration_engine = engine
 
     migration_sql = """
     -- Add new columns to users table (if they don't exist)
@@ -78,12 +92,14 @@ def run_migrations():
     """
 
     try:
-        with engine.connect() as connection:
+        print("📡 Connecting to database for email/OAuth migration...", flush=True)
+        with migration_engine.connect() as connection:
+            print("🔄 Executing migration SQL...", flush=True)
             # Execute migration
             connection.execute(text(migration_sql))
             connection.commit()
-            print("✅ Database migration completed successfully!")
+            print("✅ Database migration completed successfully!", flush=True)
             return True
     except Exception as e:
-        print(f"⚠️  Migration error (may already be applied): {e}")
+        print(f"⚠️  Migration error (may already be applied): {e}", flush=True)
         return False
