@@ -165,40 +165,61 @@ export default function DashboardPage() {
             <div className={`mb-8 rounded-lg shadow-lg overflow-hidden ${
               tierStatus.tier === 'premium'
                 ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
-                : tierStatus.has_used_free_tier
-                  ? 'bg-gradient-to-r from-gray-600 to-gray-700'
-                  : 'bg-gradient-to-r from-blue-600 to-cyan-600'
+                : tierStatus.tier === 'premium_exhausted'
+                  ? 'bg-gradient-to-r from-green-600 to-teal-600'
+                  : tierStatus.has_used_free_tier
+                    ? 'bg-gradient-to-r from-gray-600 to-gray-700'
+                    : 'bg-gradient-to-r from-blue-600 to-cyan-600'
             }`}>
               <div className="p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center space-x-3 mb-2">
                       <span className="text-3xl">
-                        {tierStatus.tier === 'premium' ? '👑' : tierStatus.has_used_free_tier ? '🔒' : '🎁'}
+                        {tierStatus.tier === 'premium'
+                          ? '👑'
+                          : tierStatus.tier === 'premium_exhausted'
+                            ? '✅'
+                            : tierStatus.has_used_free_tier
+                              ? '🔒'
+                              : '🎁'}
                       </span>
                       <h2 className="text-2xl font-bold">
                         {tierStatus.tier === 'premium'
                           ? 'Premium Account'
-                          : tierStatus.has_used_free_tier
-                            ? 'Free Tier Used'
-                            : 'Free Tier Available'}
+                          : tierStatus.tier === 'premium_exhausted'
+                            ? 'All Generations Used'
+                            : tierStatus.has_used_free_tier
+                              ? 'Free Tier Used'
+                              : 'Free Tier Available'}
                       </h2>
                     </div>
                     <p className="text-white/90">
                       {tierStatus.tier === 'premium'
-                        ? 'Unlimited generations • No watermarks • Full access'
-                        : tierStatus.has_used_free_tier
-                          ? 'Upgrade to Premium to generate more professional photos'
-                          : '5 free watermarked photos available • Try it now!'}
+                        ? `${tierStatus.premium_generations_remaining} generation${tierStatus.premium_generations_remaining === 1 ? '' : 's'} remaining • 5 photos per generation • No watermarks`
+                        : tierStatus.tier === 'premium_exhausted'
+                          ? 'Thank you for using GradGen! You\'ve used all your generations.'
+                          : tierStatus.has_used_free_tier
+                            ? 'Upgrade to Premium to generate more professional photos'
+                            : '5 free watermarked photos available • Try it now!'}
                     </p>
                   </div>
 
-                  {tierStatus.tier !== 'premium' && (
+                  {tierStatus.tier === 'free' && (
                     <button
                       onClick={() => router.push('/generate')}
                       className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
                     >
-                      {tierStatus.has_used_free_tier ? 'Upgrade to Premium' : 'Try Free Tier'}
+                      Try Free Tier
+                    </button>
+                  )}
+
+                  {(tierStatus.tier === 'needs_payment' || tierStatus.has_used_free_tier) && tierStatus.tier !== 'premium_exhausted' && (
+                    <button
+                      onClick={() => router.push('/generate')}
+                      className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+                    >
+                      Upgrade to Premium
                     </button>
                   )}
 
@@ -301,12 +322,12 @@ export default function DashboardPage() {
                         </h4>
 
                         {/* Display photos in a grid (much more efficient!) */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                           {job.generated_images.map((img) => (
                             <div key={img.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                               {img.success && img.output_image_path ? (
                                 <>
-                                  <ImageComparison imageId={img.id} />
+                                  <ImageComparison imageId={img.id} showOriginal={true} />
                                   <div className="p-3">
                                     <button
                                       onClick={() => handleDownload(img.id, img.original_filename)}

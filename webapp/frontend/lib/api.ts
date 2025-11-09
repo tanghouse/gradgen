@@ -95,9 +95,11 @@ export interface JobStatus {
 }
 
 export interface TierStatus {
-  tier: 'free' | 'premium';
+  tier: 'free' | 'premium' | 'premium_exhausted' | 'needs_payment';
   has_used_free_tier: boolean;
   has_purchased_premium: boolean;
+  premium_generations_used: number;
+  premium_generations_remaining: number;
   can_generate: boolean;
   message: string;
 }
