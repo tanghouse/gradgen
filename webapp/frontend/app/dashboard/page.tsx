@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [pollingJobIds, setPollingJobIds] = useState<Set<number>>(new Set());
   const [tierStatus, setTierStatus] = useState<TierStatus | null>(null);
+  const [retryingImageIds, setRetryingImageIds] = useState<Set<number>>(new Set());
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -107,6 +108,19 @@ export default function DashboardPage() {
       // Reload full job data when any job completes to get generated_images
       if (shouldReloadJobs) {
         await loadJobs();
+
+        // Clear retrying state for images that have completed
+        setRetryingImageIds(prev => {
+          const next = new Set(prev);
+          updatedJobs.forEach(job => {
+            job.generated_images?.forEach(img => {
+              if (img.success === true || img.success === false) {
+                next.delete(img.id);
+              }
+            });
+          });
+          return next;
+        });
       }
     }, 3000); // Poll every 3 seconds
 
@@ -133,15 +147,28 @@ export default function DashboardPage() {
     }
   };
 
-  const handleRetry = async (imageId: number) => {
+  const handleRetry = async (imageId: number, jobId: number) => {
     try {
+      // Mark image as retrying to disable button and show loading state
+      setRetryingImageIds(prev => new Set(prev).add(imageId));
+
       await generationAPI.retryImage(imageId);
-      // Reload jobs to show updated status
+
+      // Reload jobs to get updated status
       await loadJobs();
-      alert('Retrying image generation. This may take a few moments.');
+
+      // Start polling the job to track progress
+      setPollingJobIds(prev => new Set(prev).add(jobId));
+
     } catch (error) {
       console.error('Retry failed:', error);
       alert('Failed to retry image generation. Please try again.');
+      // Remove from retrying set on error
+      setRetryingImageIds(prev => {
+        const next = new Set(prev);
+        next.delete(imageId);
+        return next;
+      });
     }
   };
 
@@ -338,39 +365,45 @@ export default function DashboardPage() {
 
                         {/* Display photos in a grid (much more efficient!) */}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                          {job.generated_images.map((img) => (
-                            <div key={img.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                              {img.success === true && img.output_image_path ? (
-                                <>
-                                  <ImageComparison imageId={img.id} showOriginal={true} isClickable={true} />
-                                  <div className="p-3">
+                          {job.generated_images.map((img) => {
+                            const isRetrying = retryingImageIds.has(img.id);
+
+                            return (
+                              <div key={img.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                                {img.success === true && img.output_image_path ? (
+                                  <>
+                                    <ImageComparison imageId={img.id} showOriginal={true} isClickable={true} />
+                                    <div className="p-3">
+                                      <button
+                                        onClick={() => handleDownload(img.id, img.original_filename)}
+                                        className="w-full bg-primary-600 text-white px-3 py-2 rounded text-sm hover:bg-primary-700 transition-colors"
+                                      >
+                                        Download
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : img.success === false && img.error_message && !isRetrying ? (
+                                  <div className="p-4 text-center">
+                                    <span className="text-2xl mb-2 block">❌</span>
+                                    <p className="text-xs text-red-600 mb-2">{img.error_message || 'Generation failed'}</p>
                                     <button
-                                      onClick={() => handleDownload(img.id, img.original_filename)}
-                                      className="w-full bg-primary-600 text-white px-3 py-2 rounded text-sm hover:bg-primary-700 transition-colors"
+                                      onClick={() => handleRetry(img.id, job.id)}
+                                      className="w-full bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
                                     >
-                                      Download
+                                      Retry
                                     </button>
                                   </div>
-                                </>
-                              ) : img.success === false && img.error_message ? (
-                                <div className="p-4 text-center">
-                                  <span className="text-2xl mb-2 block">❌</span>
-                                  <p className="text-xs text-red-600 mb-2">{img.error_message || 'Generation failed'}</p>
-                                  <button
-                                    onClick={() => handleRetry(img.id)}
-                                    className="w-full bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
-                                  >
-                                    Retry
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="p-4 text-center">
-                                  <span className="text-2xl mb-2 block">⏳</span>
-                                  <p className="text-xs text-blue-600">Processing...</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                                ) : (
+                                  <div className="p-4 text-center">
+                                    <span className="text-2xl mb-2 block">⏳</span>
+                                    <p className="text-xs text-blue-600">
+                                      {isRetrying ? 'Retrying...' : 'Processing...'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
