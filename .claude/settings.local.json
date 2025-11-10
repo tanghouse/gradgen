@@ -36,7 +36,8 @@
       "Bash(railway link --help:*)",
       "Bash(cd /Users/Haichen Shi/Library/CloudStorage/OneDrive-BaringaPartnersLLP/Desktop/Projects/tanghouse/webapp/backend && railway up:*)",
       "Bash(railway run:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(railway variables:*)"
     ],
     "deny": [],
     "ask": []

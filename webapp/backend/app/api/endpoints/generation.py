@@ -531,3 +531,49 @@ async def get_tier_status(
                    "All premium generations used (2/2)" if tier == "premium_exhausted" else
                    "Please purchase premium tier to continue"
     }
+
+
+@router.post("/admin/run-migration")
+async def run_migration(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Run database migration to add unwatermarked column.
+    Only accessible to superusers.
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superusers can run migrations"
+        )
+
+    from sqlalchemy import text
+
+    try:
+        # Check if column already exists
+        result = db.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name='generated_images'
+            AND column_name='output_image_path_unwatermarked'
+        """))
+
+        if result.fetchone():
+            return {"status": "success", "message": "Column 'output_image_path_unwatermarked' already exists"}
+
+        # Add the new column
+        db.execute(text("""
+            ALTER TABLE generated_images
+            ADD COLUMN output_image_path_unwatermarked VARCHAR
+        """))
+        db.commit()
+
+        return {"status": "success", "message": "Successfully added column 'output_image_path_unwatermarked'"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Migration failed: {str(e)}"
+        )
