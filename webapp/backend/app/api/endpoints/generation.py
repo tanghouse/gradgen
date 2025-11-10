@@ -294,7 +294,13 @@ async def download_result(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Download generated image."""
+    """
+    Download generated image.
+
+    Returns the appropriate version based on user's premium status:
+    - Premium users: Always get unwatermarked version
+    - Free tier users: Get watermarked version (for images generated during free tier)
+    """
     image = db.query(GeneratedImage).join(GenerationJob).filter(
         GeneratedImage.id == image_id,
         GenerationJob.user_id == current_user.id
@@ -306,7 +312,26 @@ async def download_result(
             detail="Image not found"
         )
 
-    if not image.output_image_path:
+    # Determine which version to return
+    object_key = None
+
+    if current_user.has_purchased_premium:
+        # Premium users ALWAYS get unwatermarked version
+        # (even for photos generated during free tier)
+        if image.output_image_path_unwatermarked:
+            object_key = image.output_image_path_unwatermarked
+        elif image.output_image_path:
+            # Fallback for old images without unwatermarked version
+            object_key = image.output_image_path
+    else:
+        # Free tier users get watermarked version
+        if image.output_image_path:
+            object_key = image.output_image_path
+        else:
+            # Shouldn't happen, but fallback to unwatermarked if that's all we have
+            object_key = image.output_image_path_unwatermarked
+
+    if not object_key:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Generated image not ready"
@@ -317,7 +342,7 @@ async def download_result(
     temp_file.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        storage_service.download_file(image.output_image_path, temp_file)
+        storage_service.download_file(object_key, temp_file)
 
         return FileResponse(
             path=str(temp_file),

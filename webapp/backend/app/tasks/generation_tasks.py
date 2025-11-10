@@ -211,34 +211,44 @@ def process_tier_generation(self, job_id: int):
                     meta={'current': idx, 'total': len(images)}
                 )
 
-                # Generate portrait using custom prompt
-                result_bytes = generation_service.generate_portrait(
+                # Generate portrait using custom prompt (unwatermarked version)
+                unwatermarked_bytes = generation_service.generate_portrait(
                     selfie_path=input_temp_path,
                     board_path=board_path,
                     custom_prompt=image.prompt_text
                 )
 
-                # Apply watermark if free tier
+                # ALWAYS save unwatermarked version first
+                unwatermarked_temp_path = temp_dir / f"unwatermarked_{job.id}_{image.id}.png"
+                unwatermarked_temp_path.write_bytes(unwatermarked_bytes)
+
+                unwatermarked_object_key = f"results/{job.user_id}/unwatermarked_{job.id}_{image.id}.png"
+                storage_service.upload_file(unwatermarked_temp_path, unwatermarked_object_key)
+                unwatermarked_temp_path.unlink(missing_ok=True)
+
+                # For free tier, ALSO save watermarked version for display
                 if job.is_watermarked:
-                    result_bytes = WatermarkService.add_watermark(
-                        result_bytes,
+                    watermarked_bytes = WatermarkService.add_watermark(
+                        unwatermarked_bytes,
                         position="bottom_right"
                         # Uses default opacity (0.7) for better visibility
                     )
 
-                # Save result to temp file
-                output_temp_path = temp_dir / f"output_{job.id}_{image.id}.png"
-                output_temp_path.write_bytes(result_bytes)
+                    watermarked_temp_path = temp_dir / f"watermarked_{job.id}_{image.id}.png"
+                    watermarked_temp_path.write_bytes(watermarked_bytes)
 
-                # Upload result to storage
-                output_object_key = f"results/{job.user_id}/{job.id}_{image.id}.png"
-                storage_url = storage_service.upload_file(output_temp_path, output_object_key)
+                    watermarked_object_key = f"results/{job.user_id}/watermarked_{job.id}_{image.id}.png"
+                    storage_service.upload_file(watermarked_temp_path, watermarked_object_key)
+                    watermarked_temp_path.unlink(missing_ok=True)
 
-                # Clean up output temp file
-                output_temp_path.unlink(missing_ok=True)
+                    # For free tier: show watermarked version
+                    image.output_image_path = watermarked_object_key
+                else:
+                    # For premium tier: show unwatermarked version
+                    image.output_image_path = unwatermarked_object_key
 
-                # Update image record
-                image.output_image_path = output_object_key
+                # Update image record with BOTH paths
+                image.output_image_path_unwatermarked = unwatermarked_object_key  # Always saved
                 image.success = True
                 image.processed_at = datetime.utcnow()
 
