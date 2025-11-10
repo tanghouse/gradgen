@@ -80,7 +80,7 @@ export interface GeneratedImage {
   id: number;
   original_filename: string;
   output_image_path?: string;
-  success: boolean;
+  success: boolean | null;  // null = processing, true = success, false = failed
   error_message?: string;
   created_at: string;
   processed_at?: string;

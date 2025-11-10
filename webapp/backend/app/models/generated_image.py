@@ -15,7 +15,7 @@ class GeneratedImage(Base):
     output_image_path_unwatermarked = Column(String)  # Non-watermarked version (for premium users)
     board_image_path = Column(String)
     prompt_text = Column(Text)
-    success = Column(Boolean, default=False)
+    success = Column(Boolean, nullable=True, default=None)  # None = processing, True = success, False = failed
     error_message = Column(Text)
     generation_metadata = Column(Text)  # JSON string with additional metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())

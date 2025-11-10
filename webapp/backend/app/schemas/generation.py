@@ -20,7 +20,7 @@ class GeneratedImageResponse(BaseModel):
     id: int
     original_filename: str
     output_image_path: Optional[str]
-    success: bool
+    success: Optional[bool]  # None = processing, True = success, False = failed
     error_message: Optional[str]
     created_at: datetime
     processed_at: Optional[datetime]
