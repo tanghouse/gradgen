@@ -6,14 +6,17 @@ import api from '@/lib/api';
 interface ImageComparisonProps {
   imageId: number;
   showOriginal?: boolean; // Optional: control whether to show original
+  isClickable?: boolean; // Optional: make images clickable to zoom
 }
 
-export default function ImageComparison({ imageId, showOriginal = false }: ImageComparisonProps) {
+export default function ImageComparison({ imageId, showOriginal = false, isClickable = false }: ImageComparisonProps) {
   const [outputImageUrl, setOutputImageUrl] = useState<string>('');
   const [inputImageUrl, setInputImageUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageType, setModalImageType] = useState<'original' | 'generated'>('generated');
 
   const MAX_RETRIES = 5;
   const RETRY_DELAY = 2000; // 2 seconds
@@ -90,35 +93,84 @@ export default function ImageComparison({ imageId, showOriginal = false }: Image
     );
   }
 
-  return (
-    <div className="space-y-2">
-      {/* Show original if requested */}
-      {showOriginal && inputImageUrl && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-          <img
-            src={inputImageUrl}
-            alt="Original photo"
-            className="w-full h-auto"
-          />
-          <div className="px-3 py-2 bg-gray-100 text-xs text-gray-600 text-center font-medium">
-            Original
-          </div>
-        </div>
-      )}
+  const openModal = (type: 'original' | 'generated') => {
+    if (isClickable) {
+      setModalImageType(type);
+      setIsModalOpen(true);
+    }
+  };
 
-      {/* Generated result */}
-      {outputImageUrl && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-          <img
-            src={outputImageUrl}
-            alt="Generated graduation portrait"
-            className="w-full h-auto"
-          />
-          <div className="px-3 py-2 bg-primary-100 text-xs text-primary-700 text-center font-medium">
-            Generated
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        {/* Show original if requested */}
+        {showOriginal && inputImageUrl && (
+          <div
+            className={`border border-gray-200 rounded-lg overflow-hidden bg-gray-50 ${isClickable ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+            onClick={() => openModal('original')}
+            title={isClickable ? 'Click to zoom' : ''}
+          >
+            <img
+              src={inputImageUrl}
+              alt="Original photo"
+              className="w-full h-auto"
+            />
+            <div className="px-3 py-2 bg-gray-100 text-xs text-gray-600 text-center font-medium">
+              Original
+            </div>
+          </div>
+        )}
+
+        {/* Generated result */}
+        {outputImageUrl && (
+          <div
+            className={`border border-gray-200 rounded-lg overflow-hidden bg-gray-50 ${isClickable ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
+            onClick={() => openModal('generated')}
+            title={isClickable ? 'Click to zoom' : ''}
+          >
+            <img
+              src={outputImageUrl}
+              alt="Generated graduation portrait"
+              className="w-full h-auto"
+            />
+            <div className="px-3 py-2 bg-primary-100 text-xs text-primary-700 text-center font-medium">
+              Generated
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={closeModal}
+        >
+          <button
+            onClick={closeModal}
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors z-10"
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+          <div className="relative max-w-7xl max-h-full flex items-center justify-center">
+            <img
+              src={modalImageType === 'original' ? inputImageUrl : outputImageUrl}
+              alt={modalImageType === 'original' ? 'Original photo (full size)' : 'Generated graduation portrait (full size)'}
+              className="max-w-full max-h-[90vh] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm">
+              {modalImageType === 'original' ? 'Original Photo' : 'Generated Portrait'}
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

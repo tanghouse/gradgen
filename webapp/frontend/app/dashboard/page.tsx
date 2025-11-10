@@ -214,7 +214,7 @@ export default function DashboardPage() {
                     </button>
                   )}
 
-                  {(tierStatus.tier === 'needs_payment' || tierStatus.has_used_free_tier) && tierStatus.tier !== 'premium_exhausted' && (
+                  {tierStatus.tier !== 'premium' && tierStatus.tier !== 'premium_exhausted' && tierStatus.has_used_free_tier && (
                     <button
                       onClick={() => router.push('/generate')}
                       className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
@@ -316,9 +316,12 @@ export default function DashboardPage() {
                     {job.generated_images && job.generated_images.length > 0 && (
                       <div className="space-y-4">
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                          {job.completed_images} / {job.total_images} Photos Generated
-                          {job.is_watermarked && <span className="ml-2 text-xs text-orange-600">(Watermarked - Free Tier)</span>}
-                          {!job.is_watermarked && <span className="ml-2 text-xs text-green-600">(Premium - No Watermark)</span>}
+                          {job.completed_images}/{job.total_images} Photos Generated
+                          {job.is_watermarked ? (
+                            <span className="ml-2 text-xs text-orange-600">(Free Tier - Watermarked)</span>
+                          ) : (
+                            <span className="ml-2 text-xs text-green-600">(Premium - No Watermark)</span>
+                          )}
                         </h4>
 
                         {/* Display photos in a grid (much more efficient!) */}
@@ -327,7 +330,7 @@ export default function DashboardPage() {
                             <div key={img.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                               {img.success && img.output_image_path ? (
                                 <>
-                                  <ImageComparison imageId={img.id} showOriginal={true} />
+                                  <ImageComparison imageId={img.id} showOriginal={true} isClickable={true} />
                                   <div className="p-3">
                                     <button
                                       onClick={() => handleDownload(img.id, img.original_filename)}
@@ -337,10 +340,15 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 </>
-                              ) : (
+                              ) : img.success === false ? (
                                 <div className="p-4 text-center">
                                   <span className="text-2xl mb-2 block">❌</span>
                                   <p className="text-xs text-red-600">{img.error_message || 'Failed'}</p>
+                                </div>
+                              ) : (
+                                <div className="p-4 text-center">
+                                  <span className="text-2xl mb-2 block">⏳</span>
+                                  <p className="text-xs text-blue-600">Processing...</p>
                                 </div>
                               )}
                             </div>
