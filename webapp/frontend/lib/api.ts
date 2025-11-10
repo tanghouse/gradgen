@@ -69,6 +69,7 @@ export interface GenerationJob {
   total_images: number;
   completed_images: number;
   failed_images: number;
+  is_watermarked: boolean;
   error_message?: string;
   created_at: string;
   completed_at?: string;
@@ -288,6 +289,11 @@ export const generationAPI = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  retryImage: async (imageId: number): Promise<void> => {
+    const response = await api.post(`/generation/retry/${imageId}`);
+    return response.data;
   },
 };
 

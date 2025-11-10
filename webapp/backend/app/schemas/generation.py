@@ -39,6 +39,7 @@ class GenerationJobResponse(BaseModel):
     total_images: int
     completed_images: int
     failed_images: int
+    is_watermarked: bool = False
     error_message: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]

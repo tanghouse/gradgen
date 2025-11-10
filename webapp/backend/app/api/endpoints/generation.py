@@ -558,6 +558,60 @@ async def get_tier_status(
     }
 
 
+@router.post("/retry/{image_id}")
+async def retry_image_generation(
+    image_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retry a failed image generation.
+    Clears the error and re-queues the image for processing.
+    """
+    # Get the image and verify ownership
+    image = db.query(GeneratedImage).join(GenerationJob).filter(
+        GeneratedImage.id == image_id,
+        GenerationJob.user_id == current_user.id
+    ).first()
+
+    if not image:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found"
+        )
+
+    # Get the job
+    job = db.query(GenerationJob).filter(GenerationJob.id == image.job_id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+
+    # Reset image status
+    image.success = None  # Mark as pending
+    image.error_message = None
+    image.output_image_path = None
+    image.output_image_path_unwatermarked = None
+    image.processed_at = None
+
+    # Update job counters
+    if job.failed_images > 0:
+        job.failed_images -= 1
+
+    # If job was failed or completed, set back to processing
+    if job.status in [JobStatus.FAILED, JobStatus.COMPLETED]:
+        job.status = JobStatus.PROCESSING
+
+    db.commit()
+
+    # Re-queue the single image generation task
+    from app.tasks.generation_tasks import retry_single_image
+    task = retry_single_image.delay(image.id)
+
+    return {"status": "success", "message": "Image generation retry queued", "task_id": task.id}
+
+
 @router.post("/admin/run-migration")
 async def run_migration(
     current_user: User = Depends(get_current_active_user),

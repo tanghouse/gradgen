@@ -133,6 +133,18 @@ export default function DashboardPage() {
     }
   };
 
+  const handleRetry = async (imageId: number) => {
+    try {
+      await generationAPI.retryImage(imageId);
+      // Reload jobs to show updated status
+      await loadJobs();
+      alert('Retrying image generation. This may take a few moments.');
+    } catch (error) {
+      console.error('Retry failed:', error);
+      alert('Failed to retry image generation. Please try again.');
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -328,7 +340,7 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                           {job.generated_images.map((img) => (
                             <div key={img.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                              {img.success && img.output_image_path ? (
+                              {img.success === true && img.output_image_path ? (
                                 <>
                                   <ImageComparison imageId={img.id} showOriginal={true} isClickable={true} />
                                   <div className="p-3">
@@ -340,10 +352,16 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 </>
-                              ) : img.success === false ? (
+                              ) : img.success === false && img.error_message ? (
                                 <div className="p-4 text-center">
                                   <span className="text-2xl mb-2 block">❌</span>
-                                  <p className="text-xs text-red-600">{img.error_message || 'Failed'}</p>
+                                  <p className="text-xs text-red-600 mb-2">{img.error_message || 'Generation failed'}</p>
+                                  <button
+                                    onClick={() => handleRetry(img.id)}
+                                    className="w-full bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
+                                  >
+                                    Retry
+                                  </button>
                                 </div>
                               ) : (
                                 <div className="p-4 text-center">

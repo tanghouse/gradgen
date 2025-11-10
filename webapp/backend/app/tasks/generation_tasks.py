@@ -284,6 +284,99 @@ def process_tier_generation(self, job_id: int):
 
 
 @celery_app.task(bind=True)
+def retry_single_image(self, image_id: int):
+    """
+    Retry generation of a single failed image.
+    Follows the same watermark/unwatermarked logic based on job tier.
+    """
+    db = SessionLocal()
+    try:
+        # Get the image
+        image = db.query(GeneratedImage).filter(GeneratedImage.id == image_id).first()
+        if not image:
+            return {"error": "Image not found"}
+
+        # Get the job to check tier/watermark settings
+        job = db.query(GenerationJob).filter(GenerationJob.id == image.job_id).first()
+        if not job:
+            return {"error": "Job not found"}
+
+        temp_dir = Path("/tmp/retry") / str(job.id)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            # Download input image from storage
+            input_temp_path = temp_dir / f"input_{image.id}.jpg"
+            storage_service.download_file(image.input_image_path, input_temp_path)
+
+            # Board path is local
+            board_path = Path(image.board_image_path)
+
+            # Generate unwatermarked portrait using the custom prompt
+            unwatermarked_bytes = generation_service.generate_portrait(
+                selfie_path=input_temp_path,
+                board_path=board_path,
+                custom_prompt=image.prompt_text
+            )
+
+            # ALWAYS save unwatermarked version first
+            unwatermarked_temp_path = temp_dir / f"unwatermarked_{image.id}.png"
+            unwatermarked_temp_path.write_bytes(unwatermarked_bytes)
+
+            unwatermarked_object_key = f"results/{job.user_id}/unwatermarked_{job.id}_{image.id}.png"
+            storage_service.upload_file(unwatermarked_temp_path, unwatermarked_object_key)
+            unwatermarked_temp_path.unlink(missing_ok=True)
+
+            # For free tier, ALSO save watermarked version for display
+            if job.is_watermarked:
+                watermarked_bytes = WatermarkService.add_watermark(
+                    unwatermarked_bytes,
+                    position="bottom_right"
+                )
+
+                watermarked_temp_path = temp_dir / f"watermarked_{image.id}.png"
+                watermarked_temp_path.write_bytes(watermarked_bytes)
+
+                watermarked_object_key = f"results/{job.user_id}/watermarked_{job.id}_{image.id}.png"
+                storage_service.upload_file(watermarked_temp_path, watermarked_object_key)
+                watermarked_temp_path.unlink(missing_ok=True)
+
+                # For free tier: show watermarked version
+                image.output_image_path = watermarked_object_key
+            else:
+                # For premium tier: show unwatermarked version
+                image.output_image_path = unwatermarked_object_key
+
+            # Update image record with BOTH paths
+            image.output_image_path_unwatermarked = unwatermarked_object_key
+            image.success = True
+            image.error_message = None
+            image.processed_at = datetime.now(timezone.utc)
+
+            # Clean up input file
+            input_temp_path.unlink(missing_ok=True)
+
+            # Update job counters
+            job.completed_images += 1
+
+            # Update job status if needed
+            if job.completed_images == job.total_images:
+                job.status = JobStatus.COMPLETED
+                job.completed_at = datetime.now(timezone.utc)
+
+        except Exception as e:
+            image.success = False
+            image.error_message = str(e)
+            job.failed_images += 1
+
+        db.commit()
+        return {"status": "completed", "image_id": image_id}
+
+    finally:
+        db.close()
+
+
+@celery_app.task(bind=True)
 def regenerate_unwatermarked_photos(self, user_id: int):
     """
     Regenerate all watermarked photos without watermarks after premium upgrade.
